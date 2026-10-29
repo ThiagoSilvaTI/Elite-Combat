@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <meta name="theme-color" content="#000205">
+    <title>Aulas | Elite Combat</title>
+    <link rel="stylesheet" href="css/mobile.css">
+    <script>
+    (function () {
+      var pref = document.cookie.match(/(?:^|;\s*)preferencia_versao=([^;]+)/);
+      if (pref) return;
+
+      var isDesktop =
+        !/Android|webOS|iPhone|iPad|iPod|BlackBerry|Windows Phone|Opera Mini|IEMobile|Mobile/i.test(
+          navigator.userAgent
+        ) &&
+        !(navigator.maxTouchPoints > 1 && /Macintosh/i.test(navigator.userAgent));
+
+      if (isDesktop) {
+        var path = window.location.pathname;
+        var arquivo = path.split('/').pop() || 'index.html';
+        window.location.replace('/' + arquivo + window.location.search);
+      }
+    })();
+    </script>
+</head>
+<body>
+
+<header class="header">
+    <a href="index.html" class="header-logo">
+        <img src="../img/351028003_261521669880100_2084842963756590402_n.jpg" alt="Elite Combat">
+        <div class="logo-text">
+            <span class="main">ELITE COMBAT</span>
+            <span class="sub">Muay Thai</span>
+        </div>
+    </a>
+    <button class="menu-btn" id="menuBtn" aria-label="Menu">
+        <span></span><span></span><span></span>
+    </button>
+</header>
+
+<div class="overlay" id="overlay"></div>
+<nav class="nav-drawer" id="navDrawer">
+    <a href="index.html">Home</a>
+    <a href="aulas.html" class="active">Aulas</a>
+    <a href="equipamentos.html">Equipamentos</a>
+    <a href="contato.html">Contato</a>
+    <a href="inscricao.html" class="btn-athlete-mobile">Quero me Inscrever</a>
+    <a href="/api/preferencia?versao=desktop" style="margin-top: 12px; font-size: 0.75rem; color: var(--blue-ice); text-align: center; border: none;">🖥️ Versão Desktop</a>
+</nav>
+
+<section class="section">
+    <div class="section-header">
+        <h2 class="section-title">Nossas <span>Turmas</span></h2>
+        <div class="section-number">02</div>
+    </div>
+
+    <div class="cards">
+        <div class="card">
+            <h3>Babyclass</h3>
+            <span class="card-age">4 a 6 anos</span>
+            <p>Introdução lúdica ao Muay Thai, focada em coordenação motora, disciplina e respeito.</p>
+        </div>
+        <div class="card">
+            <h3>Kids</h3>
+            <span class="card-age">7 a 13 anos</span>
+            <p>Desenvolvimento técnico e físico, preparando a base para futuros atletas.</p>
+        </div>
+        <div class="card">
+            <h3>Juvenil / Adulto</h3>
+            <span class="card-age">14+ anos</span>
+            <p>Treino completo de Muay Thai. Técnica, sparring, condicionamento e defesa pessoal.</p>
+        </div>
+        <div class="card">
+            <h3>Personal Fighter</h3>
+            <span class="card-age">Individual</span>
+            <p>Treinamento exclusivo e personalizado para atletas de competição ou alunos com objetivos específicos.</p>
+        </div>
+    </div>
+
+    <div class="cta">
+        <a href="inscricao.html" class="btn-inscricao">Quero me Inscrever →</a>
+        <p class="cta-hint">Preencha a ficha e receba seu número de cadastro na hora.</p>
+    </div>
+</section>
+
+<footer class="footer">
+    <div class="footer-grid">
+        <div class="footer-col">
+            <h4>Elite Combat</h4>
+            <p>Muay Thai de alto rendimento em Bom Jardim - MA.</p>
+        </div>
+        <div class="footer-col">
+            <h4>Links</h4>
+            <a href="aulas.html">Aulas</a>
+            <a href="equipamentos.html">Equipamentos</a>
+            <a href="contato.html">Contato</a>
+        </div>
+        <div class="footer-col">
+            <h4>Social</h4>
+            <a href="https://www.instagram.com/elitecombat_/" target="_blank" rel="noopener">Instagram Academia</a>
+            <a href="https://www.instagram.com/saymon_danilo/" target="_blank" rel="noopener">Instagram Mestre</a>
+        </div>
+    </div>
+    <div class="footer-bottom">
+        <p>&copy; 2023 Elite Combat. Todos os direitos reservados.</p>
+    </div>
+</footer>
+
+<button class="back-top" id="backTop" aria-label="Voltar ao topo">↑</button>
+<script src="js/mobile.js"></script>
+</body>
+</html>

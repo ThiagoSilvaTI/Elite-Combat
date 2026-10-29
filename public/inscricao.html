@@ -5,6 +5,28 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Ficha de Inscrição | Elite Combat</title>
 <link rel="stylesheet" href="css/style.css">
+<script>
+(function () {
+  // Respeita escolha manual do usuário (cookie)
+  var pref = document.cookie.match(/(?:^|;\s*)preferencia_versao=([^;]+)/);
+  if (pref) return; // usuário já escolheu — não redireciona
+
+  var isMobile =
+    /Android|webOS|iPhone|iPad|iPod|BlackBerry|Windows Phone|Opera Mini|IEMobile|Mobile/i.test(
+      navigator.userAgent
+    ) ||
+    (navigator.maxTouchPoints > 1 && /Macintosh/i.test(navigator.userAgent));
+
+  if (isMobile) {
+    var path = window.location.pathname;
+    // Evita loop: só redireciona se NÃO estiver já em /mobile/
+    if (path.indexOf('/mobile/') === -1) {
+      var arquivo = path.split('/').pop() || 'index.html';
+      window.location.replace('/mobile/' + arquivo + window.location.search);
+    }
+  }
+})();
+</script>
 <style>
     .form-wrap { max-width: 900px; margin: 0 auto; }
     .form-step { background: var(--deep-sea, #030A18); border: 1px solid rgba(0,102,255,.25);

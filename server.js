@@ -48,23 +48,103 @@ db.exec(`
   );
 `);
 
+// ================== DETECÇÃO DE DISPOSITIVO ==================
+/**
+ * Detecta se a requisição vem de um dispositivo móvel.
+ * Prioriza: 1) Escolha manual (cookie), 2) User-Agent, 3) Client Hints
+ */
+function ehDispositivoMovel(req) {
+  // 1) Respeita escolha manual do usuário (cookie)
+  if (req.cookies && req.cookies.preferencia_versao) {
+    return req.cookies.preferencia_versao === 'mobile';
+  }
+
+  const ua = (req.headers['user-agent'] || '').toLowerCase();
+
+  // 2) Client Hints (Chrome/Edge modernos) — mais confiável
+  const chMobile = req.headers['sec-ch-ua-mobile'];
+  if (chMobile === '?1') return true;
+  if (chMobile === '?0') return false;
+
+  // 3) User-Agent clássico
+  const padroesMobile = [
+    /android/i,
+    /webos/i,
+    /iphone/i,
+    /ipad/i,
+    /ipod/i,
+    /blackberry/i,
+    /windows phone/i,
+    /opera mini/i,
+    /iemobile/i,
+    /mobile/i,
+  ];
+
+  // iPads modernos se passam por desktop — detecta via touch
+  const isIPad = /macintosh/i.test(ua) && /mobile/i.test(ua);
+
+  return isIPad || padroesMobile.some((p) => p.test(ua));
+}
+
+// Middleware para ler cookies sem dependência externa
+app.use((req, res, next) => {
+  req.cookies = {};
+  const raw = req.headers.cookie;
+  if (raw) {
+    raw.split(';').forEach((pair) => {
+      const [k, ...v] = pair.split('=');
+      if (k) req.cookies[k.trim()] = decodeURIComponent(v.join('=').trim());
+    });
+  }
+  next();
+});
+
 // ================== APP ==================
 app.use(express.json({ limit: '1mb' }));
+
+// Redireciona para versão correta
+app.get('/', (req, res) => {
+  if (ehDispositivoMovel(req)) {
+    return res.redirect('/mobile/');
+  }
+  return res.sendFile(path.join(__dirname, 'public', 'index.html'));
+});
+
+// Servir arquivos estáticos
 app.use(express.static(path.join(__dirname, 'public')));
 
-app.get('/', (req, res) => {
-  res.sendFile(path.join(__dirname, 'public', 'index.html'));
+// ================== API: PREFERÊNCIA MANUAL ==================
+/**
+ * Permite o usuário forçar a versão (desktop ou mobile).
+ * Ex.: /api/preferencia?versao=desktop
+ */
+app.get('/api/preferencia', (req, res) => {
+  const { versao } = req.query;
+  if (versao !== 'desktop' && versao !== 'mobile') {
+    return res.status(400).send('Versão inválida.');
+  }
+
+  // Cookie válido por 1 ano
+  res.setHeader(
+    'Set-Cookie',
+    `preferencia_versao=${versao}; Path=/; Max-Age=31536000; SameSite=Lax`
+  );
+
+  const destino = versao === 'mobile' ? '/mobile/' : '/';
+  res.redirect(destino);
 });
 
 // ---- Rota: gerar número de cadastro único de 11 dígitos ----
 function gerarNumeroCadastro() {
-  // 11 dígitos, primeiro não pode ser 0
   let n;
   let tentativas = 0;
   do {
     n = String(crypto.randomInt(10000000000, 99999999999));
     tentativas++;
-  } while (db.prepare('SELECT 1 FROM inscricoes WHERE numero_cadastro = ?').get(n) && tentativas < 20);
+  } while (
+    db.prepare('SELECT 1 FROM inscricoes WHERE numero_cadastro = ?').get(n) &&
+    tentativas < 20
+  );
   return n;
 }
 
@@ -73,7 +153,6 @@ app.post('/api/inscricao', (req, res) => {
   try {
     const b = req.body || {};
 
-    // ---------- VALIDAÇÕES BÁSICAS ----------
     const obrig = ['nome', 'data_nascimento', 'telefone', 'turma', 'emerg_nome', 'emerg_telefone'];
     for (const campo of obrig) {
       if (!b[campo] || !String(b[campo]).trim()) {
@@ -81,13 +160,13 @@ app.post('/api/inscricao', (req, res) => {
       }
     }
 
-    // Telefone emergência ≠ telefone aluno
     const norm = (t) => String(t || '').replace(/\D/g, '');
     if (norm(b.telefone) === norm(b.emerg_telefone)) {
-      return res.status(400).json({ ok: false, erro: 'O telefone de emergência não pode ser igual ao seu telefone.' });
+      return res
+        .status(400)
+        .json({ ok: false, erro: 'O telefone de emergência não pode ser igual ao seu telefone.' });
     }
 
-    // Idade
     const nasc = new Date(b.data_nascimento);
     if (isNaN(nasc.getTime())) {
       return res.status(400).json({ ok: false, erro: 'Data de nascimento inválida.' });
@@ -100,28 +179,33 @@ app.post('/api/inscricao', (req, res) => {
       return res.status(400).json({ ok: false, erro: 'Idade fora do intervalo permitido.' });
     }
 
-    // Responsável obrigatório se < 18
     const menor = idade < 18;
     if (menor) {
       if (!b.resp_nome || !b.resp_nome.trim()) {
-        return res.status(400).json({ ok: false, erro: 'Responsável legal obrigatório para menores de 18 anos.' });
+        return res
+          .status(400)
+          .json({ ok: false, erro: 'Responsável legal obrigatório para menores de 18 anos.' });
       }
       if (!b.resp_telefone || !b.resp_telefone.trim()) {
-        return res.status(400).json({ ok: false, erro: 'Telefone do responsável obrigatório para menores de 18 anos.' });
+        return res.status(400).json({
+          ok: false,
+          erro: 'Telefone do responsável obrigatório para menores de 18 anos.',
+        });
       }
     }
 
-    // Autorização de dados obrigatória
     if (b.autorizou_dados !== 'sim') {
-      return res.status(400).json({ ok: false, erro: 'É necessário autorizar o uso das informações de saúde.' });
+      return res
+        .status(400)
+        .json({ ok: false, erro: 'É necessário autorizar o uso das informações de saúde.' });
     }
 
-    // ---------- DADOS INALTERÁVEIS ----------
     const numero_cadastro = gerarNumeroCadastro();
-    const data_preenchimento = new Date().toLocaleString('pt-BR', { timeZone: 'America/Sao_Paulo' });
+    const data_preenchimento = new Date().toLocaleString('pt-BR', {
+      timeZone: 'America/Sao_Paulo',
+    });
     const responsavel_atendimento = 'BDST';
 
-    // ---------- INSERIR NO BANCO ----------
     const stmt = db.prepare(`
       INSERT INTO inscricoes (
         numero_cadastro, data_preenchimento, responsavel_atendimento,
@@ -158,19 +242,18 @@ app.post('/api/inscricao', (req, res) => {
       tempo_pratica: b.tempo_pratica || null,
       objetivo: b.objetivo || null,
       resp_nome: menor ? b.resp_nome.trim() : null,
-      resp_parentesco: menor ? (b.resp_parentesco || null) : null,
+      resp_parentesco: menor ? b.resp_parentesco || null : null,
       resp_telefone: menor ? b.resp_telefone.trim() : null,
       emerg_nome: b.emerg_nome.trim(),
       emerg_parentesco: b.emerg_parentesco || null,
       emerg_telefone: b.emerg_telefone.trim(),
       saude_json: JSON.stringify(saude),
       adaptacoes: b.adaptacoes || null,
-      autorizou_dados: b.autorizou_dados
+      autorizou_dados: b.autorizou_dados,
     });
 
     const idInscricao = info.lastInsertRowid;
 
-    // ---------- GERAR CONTRATO ----------
     const contratoPath = path.join(CONTRATOS_DIR, `contrato_${numero_cadastro}.txt`);
     const contratoConteudo = gerarContrato({
       numero_cadastro,
@@ -188,19 +271,20 @@ app.post('/api/inscricao', (req, res) => {
       emerg_nome: b.emerg_nome.trim(),
       emerg_telefone: b.emerg_telefone.trim(),
       adaptacoes: b.adaptacoes || 'Nenhuma informada',
-      saude
+      saude,
     });
     fs.writeFileSync(contratoPath, contratoConteudo, 'utf-8');
 
-    // Grava caminho do contrato
-    db.prepare('UPDATE inscricoes SET contrato_path = ? WHERE id = ?')
-      .run(contratoPath, idInscricao);
+    db.prepare('UPDATE inscricoes SET contrato_path = ? WHERE id = ?').run(
+      contratoPath,
+      idInscricao
+    );
 
     return res.json({
       ok: true,
       numero_cadastro,
       mensagem: 'Bem Vindo à Família Elite',
-      contrato_arquivo: `contrato_${numero_cadastro}.txt`
+      contrato_arquivo: `contrato_${numero_cadastro}.txt`,
     });
   } catch (err) {
     console.error('Erro na inscrição:', err);
@@ -211,14 +295,15 @@ app.post('/api/inscricao', (req, res) => {
 // ---- Rota: baixar contrato ----
 app.get('/api/contrato/:numero', (req, res) => {
   const { numero } = req.params;
-  const row = db.prepare('SELECT contrato_path FROM inscricoes WHERE numero_cadastro = ?').get(numero);
+  const row = db
+    .prepare('SELECT contrato_path FROM inscricoes WHERE numero_cadastro = ?')
+    .get(numero);
   if (!row || !row.contrato_path || !fs.existsSync(row.contrato_path)) {
     return res.status(404).send('Contrato não encontrado.');
   }
   res.download(row.contrato_path, `contrato_${numero}.txt`);
 });
 
-// ---- Geração do contrato em texto ----
 function gerarContrato(d) {
   const linhas = [];
   linhas.push('================================================================');
@@ -258,10 +343,10 @@ function gerarContrato(d) {
     q5: 'Medicamento contínuo',
     q6: 'Alergia relevante',
     q7: 'Desmaio / dor no peito / falta de ar',
-    q8: 'Orientação médica para restringir exercícios'
+    q8: 'Orientação médica para restringir exercícios',
   };
-  Object.keys(mapa).forEach(k => {
-    const v = (s[k] === 'sim') ? 'SIM' : 'NÃO';
+  Object.keys(mapa).forEach((k) => {
+    const v = s[k] === 'sim' ? 'SIM' : 'NÃO';
     linhas.push(`[${v}] ${mapa[k]}`);
     if (s[k] === 'sim' && s[`${k}_detalhe`]) {
       linhas.push(`      → ${s[`${k}_detalhe`]}`);
@@ -278,7 +363,9 @@ function gerarContrato(d) {
   linhas.push('fins de cuidado, segurança e adaptação do treino.');
   linhas.push('');
   linhas.push(`Local/Data .....: ${d.data_preenchimento}`);
-  linhas.push(`Assinatura .....: ${d.nome}${d.resp_nome ? ' (responsável: ' + d.resp_nome + ')' : ''}`);
+  linhas.push(
+    `Assinatura .....: ${d.nome}${d.resp_nome ? ' (responsável: ' + d.resp_nome + ')' : ''}`
+  );
   linhas.push('');
   linhas.push('================================================================');
   linhas.push('   DOCUMENTO GERADO ELETRONICAMENTE — ELITE COMBAT');
@@ -286,7 +373,6 @@ function gerarContrato(d) {
   return linhas.join('\n');
 }
 
-// ================== START ==================
 app.listen(PORT, () => {
   console.log(`Servidor Elite Combat rodando em http://localhost:${PORT}`);
 });

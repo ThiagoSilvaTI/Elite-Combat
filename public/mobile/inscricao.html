@@ -1,0 +1,471 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <meta name="theme-color" content="#000205">
+    <title>Ficha de Inscrição | Elite Combat</title>
+    <link rel="stylesheet" href="css/mobile.css">
+    <script>
+    (function () {
+      var pref = document.cookie.match(/(?:^|;\s*)preferencia_versao=([^;]+)/);
+      if (pref) return;
+
+      var isDesktop =
+        !/Android|webOS|iPhone|iPad|iPod|BlackBerry|Windows Phone|Opera Mini|IEMobile|Mobile/i.test(
+          navigator.userAgent
+        ) &&
+        !(navigator.maxTouchPoints > 1 && /Macintosh/i.test(navigator.userAgent));
+
+      if (isDesktop) {
+        var path = window.location.pathname;
+        var arquivo = path.split('/').pop() || 'index.html';
+        window.location.replace('/' + arquivo + window.location.search);
+      }
+    })();
+    </script>
+</head>
+<body>
+
+<header class="header">
+    <a href="index.html" class="header-logo">
+        <img src="../img/351028003_261521669880100_2084842963756590402_n.jpg" alt="Elite Combat">
+        <div class="logo-text">
+            <span class="main">ELITE COMBAT</span>
+            <span class="sub">Muay Thai</span>
+        </div>
+    </a>
+    <button class="menu-btn" id="menuBtn" aria-label="Menu">
+        <span></span><span></span><span></span>
+    </button>
+</header>
+
+<div class="overlay" id="overlay"></div>
+<nav class="nav-drawer" id="navDrawer">
+    <a href="index.html">Home</a>
+    <a href="aulas.html">Aulas</a>
+    <a href="equipamentos.html">Equipamentos</a>
+    <a href="contato.html">Contato</a>
+    <a href="inscricao.html" class="btn-athlete-mobile">Quero me Inscrever</a>
+    <a href="/api/preferencia?versao=desktop" style="margin-top: 12px; font-size: 0.75rem; color: var(--blue-ice); text-align: center; border: none;">🖥️ Versão Desktop</a>
+</nav>
+
+<section class="section">
+    <div class="section-header">
+        <h2 class="section-title">Ficha de <span>Inscrição</span></h2>
+        <div class="section-number">05</div>
+    </div>
+
+    <div class="msg-erro" id="msgErro"></div>
+
+    <form id="formInscricao" novalidate>
+
+        <!-- 01 · DADOS PESSOAIS -->
+        <div class="form-step">
+            <span class="step-num">01</span>
+            <h3>Dados Pessoais</h3>
+            <p class="desc">Campos com * são obrigatórios.</p>
+            <div class="form-grid">
+                <div>
+                    <label>Data de Preenchimento</label>
+                    <input type="text" id="dataPreenchimento" readonly>
+                </div>
+                <div>
+                    <label>Nº de Cadastro</label>
+                    <input type="text" id="numeroCadastro" readonly value="Gerado ao enviar">
+                </div>
+                <div>
+                    <label>Responsável Atendimento</label>
+                    <input type="text" id="respAtendimento" readonly value="BDST">
+                </div>
+                <div class="full">
+                    <label>Nome completo *</label>
+                    <input type="text" name="nome" required>
+                </div>
+                <div>
+                    <label>Data de nascimento *</label>
+                    <input type="date" name="data_nascimento" required>
+                </div>
+                <div>
+                    <label>Idade (calculada)</label>
+                    <input type="text" id="idade" readonly>
+                </div>
+                <div class="full">
+                    <label>Telefone / WhatsApp *</label>
+                    <input type="tel" name="telefone" placeholder="(99) 99999-9999" required>
+                </div>
+            </div>
+        </div>
+
+        <!-- 02 · TURMA E EXPERIÊNCIA -->
+        <div class="form-step">
+            <span class="step-num">02</span>
+            <h3>Turma e Experiência</h3>
+            <div class="form-grid">
+                <div class="full">
+                    <label>Turma pretendida *</label>
+                    <select name="turma" required>
+                        <option value="">Selecione...</option>
+                        <option>Baby Thai (4 a 6 anos)</option>
+                        <option>Kids (7 a 13 anos)</option>
+                        <option>Juvenil / Adulto (14+)</option>
+                        <option>Personal Fighter</option>
+                    </select>
+                </div>
+                <div>
+                    <label>Período preferido</label>
+                    <select name="periodo">
+                        <option value="">—</option>
+                        <option>Manhã</option>
+                        <option>Tarde</option>
+                        <option>Noite</option>
+                    </select>
+                </div>
+                <div>
+                    <label>Horário</label>
+                    <input type="text" name="horario" placeholder="Ex.: 19h00">
+                </div>
+                <div>
+                    <label>Já praticou Muay Thai?</label>
+                    <select name="ja_muaythai">
+                        <option value="">—</option>
+                        <option>Não</option>
+                        <option>Sim</option>
+                    </select>
+                </div>
+                <div>
+                    <label>Já praticou outra arte marcial?</label>
+                    <select name="ja_outra_arte">
+                        <option value="">—</option>
+                        <option>Não</option>
+                        <option>Sim</option>
+                    </select>
+                </div>
+                <div>
+                    <label>Qual modalidade?</label>
+                    <input type="text" name="modalidade" placeholder="Ex.: Boxe, Jiu-Jitsu...">
+                </div>
+                <div>
+                    <label>Tempo de prática</label>
+                    <input type="text" name="tempo_pratica" placeholder="Ex.: 2 anos">
+                </div>
+                <div class="full">
+                    <label>Objetivo principal</label>
+                    <select name="objetivo">
+                        <option value="">—</option>
+                        <option>Saúde / condicionamento</option>
+                        <option>Defesa pessoal</option>
+                        <option>Competição</option>
+                        <option>Disciplina</option>
+                        <option>Lazer / socialização</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+
+        <!-- 03 · RESPONSÁVEL LEGAL -->
+        <div class="form-step">
+            <span class="step-num">03</span>
+            <h3>Responsável Legal</h3>
+            <p class="desc">Obrigatório apenas para menores de 18 anos.</p>
+            <div class="aviso-menor" id="avisoMenor">
+                Aluno menor de 18 anos — preenchimento obrigatório.
+            </div>
+            <div class="form-grid">
+                <div class="full">
+                    <label>Nome do responsável</label>
+                    <input type="text" name="resp_nome" id="resp_nome">
+                </div>
+                <div>
+                    <label>Grau de parentesco</label>
+                    <input type="text" name="resp_parentesco" placeholder="Ex.: Mãe, Pai...">
+                </div>
+                <div>
+                    <label>Telefone do responsável</label>
+                    <input type="tel" name="resp_telefone" id="resp_telefone">
+                </div>
+            </div>
+        </div>
+
+        <!-- 04 · CONTATO DE EMERGÊNCIA -->
+        <div class="form-step">
+            <span class="step-num">04</span>
+            <h3>Contato de Emergência</h3>
+            <p class="desc">Não pode ser o mesmo número do aluno.</p>
+            <div class="form-grid">
+                <div class="full">
+                    <label>Nome completo *</label>
+                    <input type="text" name="emerg_nome" required>
+                </div>
+                <div>
+                    <label>Parentesco</label>
+                    <input type="text" name="emerg_parentesco">
+                </div>
+                <div>
+                    <label>Telefone *</label>
+                    <input type="tel" name="emerg_telefone" required placeholder="(99) 99999-9999">
+                </div>
+            </div>
+        </div>
+
+        <!-- 05 · SAÚDE -->
+        <div class="form-step">
+            <span class="step-num">05</span>
+            <h3>Saúde e Treino</h3>
+            <p class="desc">Marque uma opção por pergunta. Se "Sim", explique.</p>
+            <div id="saudeContainer"></div>
+
+            <div style="margin-top: 20px;">
+                <label>Adaptações ou observações</label>
+                <textarea name="adaptacoes" placeholder="Ex.: Preciso de adaptação por lesão..."></textarea>
+            </div>
+
+            <div style="margin-top: 20px; padding: 16px; background: rgba(0,102,255,.06); border-left: 3px solid #0066FF; border-radius: 4px;">
+                <label style="margin-bottom: 12px;">Autorizo o uso restrito das informações de saúde *</label>
+                <div class="radio-group">
+                    <label><input type="radio" name="autorizou_dados" value="sim" required> Sim</label>
+                    <label><input type="radio" name="autorizou_dados" value="nao" required> Não</label>
+                </div>
+            </div>
+        </div>
+
+        <!-- 06 · DECLARAÇÃO -->
+        <div class="form-step">
+            <span class="step-num">06</span>
+            <h3>Declaração</h3>
+            <p class="desc" style="line-height: 1.7; margin-bottom: 20px;">
+                Declaro que as informações acima são verdadeiras. Ao enviar, será gerado
+                automaticamente o <strong>Contrato de Inscrição</strong> com os dados
+                fornecidos, salvo no banco de dados da Elite Combat.
+            </p>
+            <button type="submit" class="btn-submit" id="btnEnviar">
+                Gerar Contrato e Concluir
+            </button>
+        </div>
+    </form>
+
+    <!-- SUCESSO -->
+    <div id="sucessoBox" class="sucesso-box">
+        <h2>Bem Vindo à Família Elite</h2>
+        <p style="color: #9CA8BC;">Sua inscrição foi concluída com sucesso.</p>
+        <div class="num">
+            Seu Nº de Cadastro:<br><strong id="numExibido">—</strong>
+        </div>
+        <p style="color: #9CA8BC; font-size: .8rem;">Data: <span id="dataExibida">—</span></p>
+        <p style="color: #9CA8BC; font-size: .8rem; margin-top: 12px;">
+            O contrato foi gerado e arquivado com segurança.
+        </p>
+        <a id="linkContrato" href="#">Baixar Contrato</a>
+        <div style="margin-top: 20px;">
+            <a href="index.html" style="background: transparent; border: 1px solid #0066FF;">Voltar para a Home</a>
+        </div>
+    </div>
+</section>
+
+<footer class="footer">
+    <div class="footer-grid">
+        <div class="footer-col">
+            <h4>Elite Combat</h4>
+            <p>Muay Thai de alto rendimento em Bom Jardim - MA.</p>
+        </div>
+        <div class="footer-col">
+            <h4>Links</h4>
+            <a href="aulas.html">Aulas</a>
+            <a href="equipamentos.html">Equipamentos</a>
+            <a href="contato.html">Contato</a>
+        </div>
+        <div class="footer-col">
+            <h4>Social</h4>
+            <a href="https://www.instagram.com/elitecombat_/" target="_blank" rel="noopener">Instagram Academia</a>
+            <a href="https://www.instagram.com/saymon_danilo/" target="_blank" rel="noopener">Instagram Mestre</a>
+        </div>
+    </div>
+    <div class="footer-bottom">
+        <p>&copy; 2023 Elite Combat. Todos os direitos reservados.</p>
+    </div>
+</footer>
+
+<button class="back-top" id="backTop" aria-label="Voltar ao topo">↑</button>
+<script src="js/mobile.js"></script>
+<script>
+// ================= DATA AUTOMÁTICA =================
+document.getElementById('dataPreenchimento').value =
+    new Date().toLocaleString('pt-BR', { timeZone: 'America/Sao_Paulo' });
+
+// ================= IDADE / RESPONSÁVEL =================
+const inputNasc = document.querySelector('input[name="data_nascimento"]');
+const idadeOut = document.getElementById('idade');
+const avisoMenor = document.getElementById('avisoMenor');
+const respNome = document.getElementById('resp_nome');
+const respTel = document.getElementById('resp_telefone');
+
+function calcIdade() {
+    if (!inputNasc.value) return null;
+    const n = new Date(inputNasc.value + 'T00:00:00');
+    const h = new Date();
+    let i = h.getFullYear() - n.getFullYear();
+    const m = h.getMonth() - n.getMonth();
+    if (m < 0 || (m === 0 && h.getDate() < n.getDate())) i--;
+    return (i >= 0 && i < 130) ? i : null;
+}
+
+inputNasc.addEventListener('change', () => {
+    const i = calcIdade();
+    idadeOut.value = i !== null ? i + ' anos' : '';
+    const menor = i !== null && i < 18;
+    if (menor) {
+        avisoMenor.classList.add('active');
+    } else {
+        avisoMenor.classList.remove('active');
+    }
+    respNome.required = menor;
+    respTel.required = menor;
+});
+
+// ================= PERGUNTAS DE SAÚDE =================
+const perguntas = [
+    { id: 'q1', txt: 'Possui alguma condição médica diagnosticada que exija cuidado durante exercícios?' },
+    { id: 'q2', txt: 'Possui condição psicológica, psiquiátrica ou do neurodesenvolvimento que demande atenção?' },
+    { id: 'q3', txt: 'Possui deficiência, limitação física, dificuldade de mobilidade ou restrição de movimentos?' },
+    { id: 'q4', txt: 'Tem histórico de lesão, cirurgia ou fratura que possa afetar o treinamento?' },
+    { id: 'q5', txt: 'Usa medicamento contínuo que possa interferir no esforço físico ou na atenção?' },
+    { id: 'q6', txt: 'Possui alergia relevante para situações de emergência?' },
+    { id: 'q7', txt: 'Já teve desmaio, dor no peito ou falta de ar intensa durante atividade física?' },
+    { id: 'q8', txt: 'Recebeu orientação médica para evitar ou restringir exercícios físicos?' }
+];
+
+const saudeContainer = document.getElementById('saudeContainer');
+perguntas.forEach((p, idx) => {
+    const row = document.createElement('div');
+    row.className = 'saude-row';
+    row.innerHTML = `
+        <div class="pergunta">${String(idx + 1).padStart(2, '0')}. ${p.txt}</div>
+        <div class="resp-opts">
+            <label><input type="radio" name="${p.id}" value="nao" required> Não</label>
+            <label><input type="radio" name="${p.id}" value="sim" required> Sim</label>
+        </div>
+        <div class="detalhe-cond">
+            <textarea name="${p.id}_detalhe" placeholder="Descreva a condição e cuidados..."></textarea>
+        </div>
+    `;
+    saudeContainer.appendChild(row);
+
+    row.querySelectorAll(`input[name="${p.id}"]`).forEach(r => {
+        r.addEventListener('change', () => {
+            const det = row.querySelector('.detalhe-cond');
+            if (r.value === 'sim' && r.checked) {
+                det.classList.add('active');
+            } else {
+                det.classList.remove('active');
+            }
+        });
+    });
+});
+
+// ================= ENVIO =================
+const form = document.getElementById('formInscricao');
+const msgErro = document.getElementById('msgErro');
+const btnEnviar = document.getElementById('btnEnviar');
+
+function mostrarErro(txt) {
+    msgErro.textContent = txt;
+    msgErro.classList.add('active');
+    msgErro.scrollIntoView({ behavior: 'smooth', block: 'center' });
+}
+
+form.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    msgErro.classList.remove('active');
+
+    // Valida telefone emergência diferente
+    const telAluno = form.telefone.value.replace(/\D/g, '');
+    const telEmerg = form.emerg_telefone.value.replace(/\D/g, '');
+    if (telAluno && telAluno === telEmerg) {
+        return mostrarErro('O telefone de emergência não pode ser o mesmo do aluno.');
+    }
+
+    // Valida menor de 18
+    const idade = calcIdade();
+    if (idade !== null && idade < 18) {
+        if (!form.resp_nome.value.trim() || !form.resp_telefone.value.trim()) {
+            return mostrarErro('Aluno menor de 18: preencha nome e telefone do responsável.');
+        }
+    }
+
+    // Monta saúde
+    const saude = {};
+    for (const p of perguntas) {
+        const sel = form.querySelector(`input[name="${p.id}"]:checked`);
+        if (!sel) return mostrarErro(`Responda a pergunta ${p.id.toUpperCase()} sobre saúde.`);
+        saude[p.id] = sel.value;
+        if (sel.value === 'sim') {
+            saude[`${p.id}_detalhe`] = form.querySelector(`textarea[name="${p.id}_detalhe"]`).value.trim();
+        }
+    }
+
+    // Valida autorização
+    const aut = form.querySelector('input[name="autorizou_dados"]:checked');
+    if (!aut) return mostrarErro('É necessário autorizar o uso das informações de saúde.');
+    if (aut.value !== 'sim') return mostrarErro('A autorização precisa ser "Sim".');
+
+    // Monta payload
+    const payload = {
+        nome: form.nome.value,
+        data_nascimento: form.data_nascimento.value,
+        telefone: form.telefone.value,
+        turma: form.turma.value,
+        periodo: form.periodo.value,
+        horario: form.horario.value,
+        ja_muaythai: form.ja_muaythai.value,
+        ja_outra_arte: form.ja_outra_arte.value,
+        modalidade: form.modalidade.value,
+        tempo_pratica: form.tempo_pratica.value,
+        objetivo: form.objetivo.value,
+        resp_nome: form.resp_nome.value,
+        resp_parentesco: form.resp_parentesco.value,
+        resp_telefone: form.resp_telefone.value,
+        emerg_nome: form.emerg_nome.value,
+        emerg_parentesco: form.emerg_parentesco.value,
+        emerg_telefone: form.emerg_telefone.value,
+        saude,
+        adaptacoes: form.adaptacoes.value,
+        autorizou_dados: aut.value
+    };
+
+    btnEnviar.disabled = true;
+    btnEnviar.textContent = 'Processando...';
+
+    try {
+        const r = await fetch('/api/inscricao', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+        });
+        const data = await r.json();
+
+        if (!data.ok) {
+            btnEnviar.disabled = false;
+            btnEnviar.textContent = 'Gerar Contrato e Concluir';
+            return mostrarErro(data.erro || 'Erro ao processar inscrição.');
+        }
+
+        // Sucesso
+        form.style.display = 'none';
+        const box = document.getElementById('sucessoBox');
+        box.classList.add('active');
+        document.getElementById('numExibido').textContent = data.numero_cadastro;
+        document.getElementById('dataExibida').textContent =
+            new Date().toLocaleString('pt-BR', { timeZone: 'America/Sao_Paulo' });
+        document.getElementById('linkContrato').href = `/api/contrato/${data.numero_cadastro}`;
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+
+    } catch (err) {
+        console.error(err);
+        btnEnviar.disabled = false;
+        btnEnviar.textContent = 'Gerar Contrato e Concluir';
+        mostrarErro('Erro de conexão. Tente novamente.');
+    }
+});
+</script>
+</body>
+</html>
