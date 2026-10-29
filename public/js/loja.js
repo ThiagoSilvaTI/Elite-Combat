@@ -1,7 +1,7 @@
 // ============================================================
-// LOJA ELITE COMBAT — lógica compartilhada
-// Usado em: equipamentos.html, equipamentos2.html,
-//           mobile/equipamentos.html, mobile/equipamentos2.html
+// LOJA ELITE COMBAT — lógica completa
+// Funciona em: equipamentos.html, equipamentos2.html,
+//              mobile/equipamentos.html, mobile/equipamentos2.html
 // ============================================================
 
 (function () {
@@ -11,21 +11,22 @@
     const MOEDA = 'R$ ';
 
     // ================= PRODUTOS =================
+    // Edite aqui para trocar preços, imagens e nomes
     const PRODUTOS = [
         // ---- CAMISAS (2) ----
         {
-            id: 'camisa-01',
-            nome: 'Camisa Dry-Fit Elite Combat',
+            id: 'camisa-azul',
+            nome: 'Camisa Azul Elite Combat',
             categoria: 'camisa',
-            preco: 79.90,
-            img: 'https://images.unsplash.com/photo-1583743814966-8936f5b7be1a?q=80&w=800&auto=format&fit=crop',
+            preco: 120.00,
+            img: 'https://www.image2url.com/r2/default/images/1793312821926-1a45cf99-04e0-4d9d-87bf-51a2050505d3.png',
             tamanhos: ['P', 'M', 'G', 'GG'],
         },
         {
-            id: 'camisa-02',
-            nome: 'Camisa Treino Premium',
+            id: 'camisa-roxa',
+            nome: 'Camisa Roxa Elite Combat',
             categoria: 'camisa',
-            preco: 89.90,
+            preco: 120.00,
             img: 'https://images.unsplash.com/photo-1595078475328-1ab05d0a6a0e?q=80&w=800&auto=format&fit=crop',
             tamanhos: ['P', 'M', 'G', 'GG'],
         },
@@ -81,8 +82,8 @@
     ];
 
     // ================= ESTADO =================
-    const carrinho = {};       // { chave: { produto, tamanho, qtd } }
-    const selecionados = {};   // { produtoId: tamanho }
+    const carrinho = {};
+    const selecionados = {};
 
     // ================= HELPERS =================
     function formatarPreco(v) {
@@ -123,7 +124,7 @@
             </div>
         `).join('');
 
-        // Eventos de tamanho
+        // Tamanhos
         grid.querySelectorAll('.tamanhos').forEach(bloco => {
             const id = bloco.dataset.id;
             bloco.querySelectorAll('button').forEach(btn => {
@@ -140,20 +141,16 @@
             });
         });
 
-        // Eventos de adicionar com animação
+        // Adicionar com animação
         grid.querySelectorAll('.btn-add').forEach(btn => {
             btn.addEventListener('click', () => {
                 const id = btn.dataset.add;
                 const tam = selecionados[id];
                 if (!tam) return;
 
-                // Efeito de "clique"
-                btn.classList.add('clicked');
-                setTimeout(() => btn.classList.remove('clicked'), 200);
-
-                // Animação fly-to-cart
                 const card = btn.closest('.shop-card');
                 const img = card.querySelector('.shop-img img');
+
                 animarVooAoCarrinho(img, () => {
                     adicionarAoCarrinho(id, tam);
                 });
@@ -172,7 +169,6 @@
         const rectOrigem = imgOrigem.getBoundingClientRect();
         const rectDestino = cartBtn.getBoundingClientRect();
 
-        // Clona a imagem
         const clone = document.createElement('img');
         clone.src = imgOrigem.src;
         clone.style.cssText = `
@@ -194,11 +190,8 @@
                         border-radius 0.8s ease-out;
         `;
         document.body.appendChild(clone);
-
-        // Força reflow
         void clone.offsetWidth;
 
-        // Aplica destino
         clone.style.top = `${rectDestino.top + rectDestino.height / 2 - 20}px`;
         clone.style.left = `${rectDestino.left + rectDestino.width / 2 - 20}px`;
         clone.style.width = '40px';
@@ -206,10 +199,8 @@
         clone.style.borderRadius = '50%';
         clone.style.opacity = '0';
 
-        // Callback + limpeza
         setTimeout(() => {
             callback();
-            // Pulso no carrinho
             cartBtn.classList.add('pulse');
             setTimeout(() => cartBtn.classList.remove('pulse'), 400);
         }, 750);
@@ -221,11 +212,9 @@
     function adicionarAoCarrinho(id, tamanho) {
         const produto = PRODUTOS.find(p => p.id === id);
         if (!produto) return;
-
         const chave = id + '|' + tamanho;
         if (carrinho[chave]) carrinho[chave].qtd++;
         else carrinho[chave] = { produto, tamanho, qtd: 1 };
-
         atualizarCarrinhoFlutuante();
         atualizarModalCarrinho();
     }
@@ -248,20 +237,11 @@
     function atualizarCarrinhoFlutuante() {
         const btn = document.getElementById('cartFloatingBtn');
         if (!btn) return;
-
         const qtd = totalItens();
-        const total = totalValor();
-
         btn.querySelector('.cart-count').textContent = qtd;
-        btn.querySelector('.cart-total').textContent = formatarPreco(total);
-
-        if (qtd > 0) {
-            btn.classList.add('visible');
-            btn.classList.remove('vazio');
-        } else {
-            btn.classList.remove('visible');
-            btn.classList.add('vazio');
-        }
+        btn.querySelector('.cart-total').textContent = formatarPreco(totalValor());
+        if (qtd > 0) btn.classList.add('visible');
+        else btn.classList.remove('visible');
     }
 
     // ================= MODAL CARRINHO =================
@@ -311,7 +291,6 @@
             b.addEventListener('click', () => removerDoCarrinho(b.dataset.rem)));
     }
 
-    // ================= MODAL ABRIR/FECHAR =================
     function abrirModal() {
         const bg = document.getElementById('cartModalBg');
         if (!bg) return;
@@ -363,8 +342,7 @@
             `*TOTAL:* ${formatarPreco(totalValor())}\n\n` +
             `_Pedido enviado pelo site Elite Combat_`;
 
-        const url = `https://wa.me/${WHATSAPP_NUMERO}?text=${encodeURIComponent(mensagem)}`;
-        window.open(url, '_blank');
+        window.open(`https://wa.me/${WHATSAPP_NUMERO}?text=${encodeURIComponent(mensagem)}`, '_blank');
 
         // Limpa
         Object.keys(carrinho).forEach(k => delete carrinho[k]);
@@ -378,7 +356,6 @@
         atualizarModalCarrinho();
         fecharModal();
 
-        // Reseta seleções visuais
         document.querySelectorAll('.shop-card').forEach(c => c.classList.remove('selected'));
         document.querySelectorAll('.tamanhos button').forEach(b => b.classList.remove('selected'));
         document.querySelectorAll('.btn-add').forEach(b => {
@@ -395,7 +372,6 @@
         renderizarGrid('todos');
         atualizarCarrinhoFlutuante();
 
-        // Filtros
         document.querySelectorAll('.filtro').forEach(btn => {
             btn.addEventListener('click', () => {
                 document.querySelectorAll('.filtro').forEach(b => b.classList.remove('active'));
@@ -404,13 +380,9 @@
             });
         });
 
-        // Botão flutuante
         const cartBtn = document.getElementById('cartFloatingBtn');
-        if (cartBtn) {
-            cartBtn.addEventListener('click', abrirModal);
-        }
+        if (cartBtn) cartBtn.addEventListener('click', abrirModal);
 
-        // Fechar modal
         const bg = document.getElementById('cartModalBg');
         if (bg) {
             bg.addEventListener('click', (e) => {
@@ -420,7 +392,6 @@
         const btnFechar = document.getElementById('btnFecharCart');
         if (btnFechar) btnFechar.addEventListener('click', fecharModal);
 
-        // Enviar WhatsApp
         const btnWhats = document.getElementById('btnWhats');
         if (btnWhats) btnWhats.addEventListener('click', enviarWhatsApp);
     }
