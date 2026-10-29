@@ -1,0 +1,591 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Ficha de Inscrição | Elite Combat</title>
+<link rel="stylesheet" href="css/style.css">
+<style>
+    .form-wrap { max-width: 900px; margin: 0 auto; }
+    .form-step { background: var(--deep-sea, #030A18); border: 1px solid rgba(0,102,255,.25);
+        padding: 40px; margin-bottom: 30px; position: relative; }
+    .form-step h3 { font-family: var(--font-display, 'Anton', sans-serif); font-size: 1.6rem;
+        text-transform: uppercase; letter-spacing: 2px; margin-bottom: 8px; color: #fff; }
+    .form-step .step-num { font-family: var(--font-display, 'Anton', sans-serif); color: rgba(0,102,255,.25);
+        font-size: 3rem; position: absolute; top: 15px; right: 25px; line-height: 1; }
+    .form-step p.desc { color: var(--gray-light, #9CA8BC); font-size: .85rem; margin-bottom: 30px; }
+    .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+    .form-grid .full { grid-column: 1 / -1; }
+    label { display: block; font-size: .72rem; letter-spacing: 2px; text-transform: uppercase;
+        color: #9CA8BC; margin-bottom: 8px; font-weight: 700; }
+    input[type=text], input[type=tel], input[type=date], input[type=number], select, textarea {
+        width: 100%; padding: 12px 14px; background: rgba(0,0,0,.4);
+        border: 1px solid rgba(0,102,255,.3); color: #fff; font-family: inherit;
+        font-size: .95rem; border-radius: 2px; transition: .3s; }
+    input:focus, select:focus, textarea:focus {
+        outline: none; border-color: #0066FF; box-shadow: 0 0 0 3px rgba(0,102,255,.15); }
+    input[readonly] { background: rgba(255,255,255,.03); color: #4D94FF; cursor: not-allowed; }
+    textarea { resize: vertical; min-height: 80px; }
+    .radio-group { display: flex; gap: 20px; flex-wrap: wrap; margin-top: 4px; }
+    .radio-group label { display: inline-flex; align-items: center; gap: 6px; cursor: pointer;
+        text-transform: none; letter-spacing: 0; font-size: .9rem; color: #fff; font-weight: 400; }
+    .saude-row { display: grid; grid-template-columns: 1fr auto; gap: 15px; align-items: start;
+        padding: 14px 0; border-bottom: 1px solid rgba(255,255,255,.06); }
+    .saude-row .pergunta { color: #fff; font-size: .9rem; padding-top: 4px; }
+    .saude-row .resp-opts { display: flex; gap: 15px; flex-shrink: 0; }
+    .saude-row .resp-opts label { text-transform: uppercase; letter-spacing: 1px; font-size: .75rem; }
+    .detalhe-cond { grid-column: 1 / -1; margin-top: 8px; }
+    .detalhe-cond textarea { min-height: 60px; }
+    .btn-submit { width: 100%; padding: 22px; background: linear-gradient(135deg,#0033A0,#0066FF);
+        color: #fff; border: 2px solid #000; font-family: var(--font-display,'Anton',sans-serif);
+        font-size: 1.1rem; letter-spacing: 4px; text-transform: uppercase; cursor: pointer;
+        transition: .4s; box-shadow: 0 10px 35px rgba(0,102,255,.4); }
+    .btn-submit:hover { transform: translateY(-3px); box-shadow: 0 15px 45px rgba(0,102,255,.8); }
+    .btn-submit:disabled { opacity: .5; cursor: wait; }
+    .msg-erro { background: rgba(255,26,64,.15); border: 1px solid #FF1A40;
+        color: #FF4D6D; padding: 14px; margin-bottom: 20px; font-size: .9rem; display: none; }
+    .aviso-menor { background: rgba(255, 200, 0, .1); border-left: 3px solid #FFC800;
+        padding: 12px 15px; color: #FFC800; font-size: .85rem; margin-bottom: 20px; display: none; }
+    .sucesso-box { display: none; text-align: center; padding: 60px 30px;
+        background: linear-gradient(135deg, rgba(0,51,160,.25), rgba(0,102,255,.05));
+        border: 1px solid #0066FF; }
+    .sucesso-box.active { display: block; animation: fadeUp .8s ease-out; }
+    .sucesso-box h2 { font-family: var(--font-display,'Anton',sans-serif); font-size: 2.5rem;
+        color: #0066FF; margin-bottom: 15px; letter-spacing: 3px; text-transform: uppercase; }
+    .sucesso-box .num { font-size: 1.4rem; color: #fff; margin: 25px 0; }
+    .sucesso-box .num strong { color: #FFC800; letter-spacing: 3px; font-size: 1.8rem; }
+    .sucesso-box a { display: inline-block; margin-top: 20px; padding: 14px 30px;
+        background: #0033A0; color: #fff; text-decoration: none; letter-spacing: 2px;
+        text-transform: uppercase; font-family: var(--font-display,'Anton',sans-serif); }
+    @keyframes fadeUp { from { opacity: 0; transform: translateY(30px); } to { opacity: 1; transform: translateY(0); } }
+    @media (max-width: 640px) {
+    .form-wrap {
+        padding: 0 5px;
+    }
+
+    .form-step {
+        padding: 25px 18px;
+        margin-bottom: 20px;
+    }
+
+    .form-step h3 {
+        font-size: 1.2rem;
+        letter-spacing: 1px;
+        padding-right: 40px;
+    }
+
+    .form-step .step-num {
+        font-size: 2rem;
+        top: 12px;
+        right: 15px;
+    }
+
+    .form-step p.desc {
+        font-size: 0.78rem;
+        margin-bottom: 20px;
+    }
+
+    .form-grid {
+        grid-template-columns: 1fr;
+        gap: 15px;
+    }
+
+    label {
+        font-size: 0.68rem;
+        letter-spacing: 1.5px;
+    }
+
+    input[type=text], input[type=tel], input[type=date],
+    input[type=number], select, textarea {
+        padding: 12px 12px;
+        font-size: 16px; /* IMPORTANTE: evita zoom automático no iOS */
+    }
+
+    /* Perguntas de saúde */
+    .saude-row {
+        grid-template-columns: 1fr;
+        gap: 10px;
+        padding: 12px 0;
+    }
+
+    .saude-row .pergunta {
+        font-size: 0.85rem;
+        line-height: 1.5;
+    }
+
+    .saude-row .resp-opts {
+        justify-content: flex-start;
+        gap: 20px;
+    }
+
+    .saude-row .resp-opts label {
+        font-size: 0.8rem;
+        padding: 5px 0;
+    }
+
+    /* Radio buttons maiores para toque */
+    input[type=radio] {
+        width: 18px;
+        height: 18px;
+        margin-right: 4px;
+    }
+
+    .btn-submit {
+        padding: 18px 15px;
+        font-size: 0.85rem;
+        letter-spacing: 2px;
+    }
+
+    /* Tela de sucesso */
+    .sucesso-box {
+        padding: 40px 20px;
+    }
+
+    .sucesso-box h2 {
+        font-size: 1.8rem;
+        letter-spacing: 1px;
+    }
+
+    .sucesso-box .num {
+        font-size: 1rem;
+    }
+
+    .sucesso-box .num strong {
+        font-size: 1.4rem;
+        letter-spacing: 2px;
+        word-break: break-all;
+    }
+
+    .sucesso-box a {
+        padding: 12px 20px;
+        font-size: 0.85rem;
+        width: 100%;
+        max-width: 280px;
+    }
+}
+</style>
+</head>
+<body>
+<div class="signature">THIAGO</div>
+
+<header>
+    <a href="index.html" class="logo-nav">
+        <img src="img/351028003_261521669880100_2084842963756590402_n.jpg" alt="Elite Combat">
+        <div class="logo-text">
+            <span class="main">ELITE COMBAT</span>
+            <span class="sub">Muay Thai</span>
+        </div>
+    </a>
+    <nav>
+        <ul>
+            <li><a href="index2.html"><button class="btn-athlete" type="button"><span>Atleta</span></button></a></li>
+            <li><a href="index.html">Home</a></li>
+            <li><a href="aulas.html" class="active">Aulas</a></li>
+            <li><a href="equipamentos.html">Equipamentos</a></li>
+            <li><a href="contato.html">Contato</a></li>
+        </ul>
+    </nav>
+</header>
+
+<section style="padding-top: 150px;">
+    <div class="section-header reveal">
+        <h2 class="section-title">Ficha de <span>Inscrição</span></h2>
+        <div class="section-number">05</div>
+    </div>
+
+    <div class="form-wrap">
+        <div id="msgErro" class="msg-erro"></div>
+
+        <form id="formInscricao" novalidate>
+
+            <!-- 01 · DADOS PESSOAIS -->
+            <div class="form-step reveal">
+                <span class="step-num">01</span>
+                <h3>Dados Pessoais</h3>
+                <p class="desc">Preencha com letra legível. Campos com <strong>*</strong> são obrigatórios.</p>
+                <div class="form-grid">
+                    <div class="full">
+                        <label>Data de Preenchimento (automática)</label>
+                        <input type="text" id="dataPreenchimento" readonly>
+                    </div>
+                    <div>
+                        <label>Nº de Cadastro (automático)</label>
+                        <input type="text" id="numeroCadastro" readonly value="Gerado ao enviar">
+                    </div>
+                    <div>
+                        <label>Responsável pelo Atendimento</label>
+                        <input type="text" id="respAtendimento" readonly value="BDST">
+                    </div>
+                    <div class="full">
+                        <label>Nome completo *</label>
+                        <input type="text" name="nome" required>
+                    </div>
+                    <div>
+                        <label>Data de nascimento *</label>
+                        <input type="date" name="data_nascimento" required>
+                    </div>
+                    <div>
+                        <label>Idade (calculada)</label>
+                        <input type="text" id="idade" readonly>
+                    </div>
+                    <div class="full">
+                        <label>Telefone / WhatsApp *</label>
+                        <input type="tel" name="telefone" placeholder="(99) 99999-9999" required>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 02 · TURMA E EXPERIÊNCIA -->
+            <div class="form-step reveal">
+                <span class="step-num">02</span>
+                <h3>Turma e Experiência</h3>
+                <div class="form-grid">
+                    <div class="full">
+                        <label>Turma pretendida *</label>
+                        <select name="turma" required>
+                            <option value="">Selecione...</option>
+                            <option>Baby Thai (4 a 6 anos)</option>
+                            <option>Kids (7 a 13 anos)</option>
+                            <option>Juvenil / Adulto (14+)</option>
+                            <option>Personal Fighter</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label>Período preferido</label>
+                        <select name="periodo">
+                            <option value="">—</option>
+                            <option>Manhã</option><option>Tarde</option><option>Noite</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label>Horário</label>
+                        <input type="text" name="horario" placeholder="Ex.: 19h00">
+                    </div>
+                    <div>
+                        <label>Já praticou Muay Thai?</label>
+                        <select name="ja_muaythai">
+                            <option value="">—</option><option>Não</option><option>Sim</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label>Já praticou outra arte marcial?</label>
+                        <select name="ja_outra_arte">
+                            <option value="">—</option><option>Não</option><option>Sim</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label>Qual modalidade?</label>
+                        <input type="text" name="modalidade" placeholder="Ex.: Boxe, Jiu-Jitsu...">
+                    </div>
+                    <div>
+                        <label>Tempo de prática</label>
+                        <input type="text" name="tempo_pratica" placeholder="Ex.: 2 anos">
+                    </div>
+                    <div class="full">
+                        <label>Objetivo principal</label>
+                        <select name="objetivo">
+                            <option value="">—</option>
+                            <option>Saúde / condicionamento</option>
+                            <option>Defesa pessoal</option>
+                            <option>Competição</option>
+                            <option>Disciplina</option>
+                            <option>Lazer / socialização</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 03 · RESPONSÁVEL LEGAL -->
+            <div class="form-step reveal">
+                <span class="step-num">03</span>
+                <h3>Dados do Responsável Legal</h3>
+                <p class="desc">Obrigatório apenas para menores de 18 anos.</p>
+                <div id="avisoMenor" class="aviso-menor">
+                    Aluno menor de 18 anos — preenchimento do responsável é obrigatório.
+                </div>
+                <div class="form-grid">
+                    <div class="full">
+                        <label>Nome do responsável</label>
+                        <input type="text" name="resp_nome" id="resp_nome">
+                    </div>
+                    <div>
+                        <label>Grau de parentesco</label>
+                        <input type="text" name="resp_parentesco" id="resp_parentesco" placeholder="Ex.: Mãe, Pai...">
+                    </div>
+                    <div>
+                        <label>Telefone do responsável</label>
+                        <input type="tel" name="resp_telefone" id="resp_telefone">
+                    </div>
+                </div>
+            </div>
+
+            <!-- 04 · CONTATO DE EMERGÊNCIA -->
+            <div class="form-step reveal">
+                <span class="step-num">04</span>
+                <h3>Contato de Emergência</h3>
+                <p class="desc">Não pode ser o mesmo número do aluno.</p>
+                <div class="form-grid">
+                    <div class="full">
+                        <label>Nome completo *</label>
+                        <input type="text" name="emerg_nome" required>
+                    </div>
+                    <div>
+                        <label>Parentesco / vínculo</label>
+                        <input type="text" name="emerg_parentesco">
+                    </div>
+                    <div>
+                        <label>Telefone / WhatsApp *</label>
+                        <input type="tel" name="emerg_telefone" required placeholder="(99) 99999-9999">
+                    </div>
+                </div>
+            </div>
+
+            <!-- 05 · SAÚDE E TREINO -->
+            <div class="form-step reveal">
+                <span class="step-num">05</span>
+                <h3>Saúde e Treino</h3>
+                <p class="desc">Marque uma opção por pergunta. Se responder "Sim", explique o necessário.</p>
+                <div id="saudeContainer"></div>
+
+                <div style="margin-top: 25px;">
+                    <label>Adaptações, apoio ou informação importante</label>
+                    <textarea name="adaptacoes" placeholder="Ex.: Preciso de adaptação por lesão no joelho..."></textarea>
+                </div>
+
+                <div style="margin-top: 30px; padding: 20px; background: rgba(0,102,255,.06); border-left: 3px solid #0066FF;">
+                    <label style="margin-bottom: 15px;">Autorizo o uso restrito das informações de saúde (obrigatório) *</label>
+                    <div class="radio-group">
+                        <label><input type="radio" name="autorizou_dados" value="sim" required> Sim</label>
+                        <label><input type="radio" name="autorizou_dados" value="nao" required> Não</label>
+                    </div>
+                </div>
+            </div>
+
+            <div class="form-step reveal">
+                <h3 style="margin-bottom: 20px;">06 · Declaração</h3>
+                <p style="color: #9CA8BC; font-size: .9rem; line-height: 1.8; margin-bottom: 25px;">
+                    Declaro que as informações acima são verdadeiras, estou ciente de que o Muay Thai
+                    envolve esforço físico e seguirei as orientações da equipe. Ao enviar, será gerado
+                    automaticamente o <strong>Contrato de Inscrição</strong> com os dados fornecidos,
+                    que ficará salvo no banco de dados da Elite Combat.
+                </p>
+                <button type="submit" class="btn-submit" id="btnEnviar">Gerar Contrato e Concluir Inscrição</button>
+            </div>
+        </form>
+
+        <!-- SUCESSO -->
+        <div id="sucessoBox" class="sucesso-box">
+            <h2>Bem Vindo à Família Elite</h2>
+            <p style="color: #9CA8BC;">Sua inscrição foi concluída com sucesso.</p>
+            <div class="num">
+                Seu Nº de Cadastro:<br><strong id="numExibido">—</strong>
+            </div>
+            <p style="color: #9CA8BC; font-size: .85rem;">Data: <span id="dataExibida">—</span></p>
+            <p style="color: #9CA8BC; font-size: .85rem; margin-top: 15px;">
+                O contrato foi gerado e arquivado com segurança.
+            </p>
+            <a id="linkContrato" href="#" target="_blank">Baixar Contrato</a>
+            <div style="margin-top: 30px;">
+                <a href="index.html" style="background: transparent; border: 1px solid #0066FF;">Voltar para a Home</a>
+            </div>
+        </div>
+    </div>
+</section>
+
+<footer>
+    <div class="footer-grid">
+        <div class="footer-col">
+            <h4>ELITE COMBAT</h4>
+            <p>Muay Thai de alto rendimento em Bom Jardim - MA.</p>
+        </div>
+        <div class="footer-col">
+            <h4>Links</h4>
+            <a href="aulas.html">Aulas</a>
+            <a href="equipamentos.html">Equipamentos</a>
+            <a href="contato.html">Contato</a>
+        </div>
+        <div class="footer-col">
+            <h4>Social</h4>
+            <a href="https://www.instagram.com/elitecombat_/" target="_blank">Instagram Academia</a>
+            <a href="https://www.instagram.com/saymon_danilo/" target="_blank">Instagram Mestre</a>
+        </div>
+    </div>
+    <div class="footer-bottom">
+        <p>&copy; 2023 Elite Combat. Todos os direitos reservados.</p>
+    </div>
+</footer>
+
+<script>
+// ================= DATA AUTOMÁTICA =================
+document.getElementById('dataPreenchimento').value =
+    new Date().toLocaleString('pt-BR', { timeZone: 'America/Sao_Paulo' });
+
+// ================= IDADE / RESPONSÁVEL =================
+const inputNasc = document.querySelector('input[name="data_nascimento"]');
+const idadeOut  = document.getElementById('idade');
+const avisoMenor = document.getElementById('avisoMenor');
+const respNome = document.getElementById('resp_nome');
+const respTel  = document.getElementById('resp_telefone');
+
+function calcIdade() {
+    if (!inputNasc.value) return null;
+    const n = new Date(inputNasc.value + 'T00:00:00');
+    const h = new Date();
+    let i = h.getFullYear() - n.getFullYear();
+    const m = h.getMonth() - n.getMonth();
+    if (m < 0 || (m === 0 && h.getDate() < n.getDate())) i--;
+    return (i >= 0 && i < 130) ? i : null;
+}
+
+inputNasc.addEventListener('change', () => {
+    const i = calcIdade();
+    idadeOut.value = i !== null ? i + ' anos' : '';
+    const menor = i !== null && i < 18;
+    avisoMenor.style.display = menor ? 'block' : 'none';
+    respNome.required = menor;
+    respTel.required  = menor;
+});
+
+// ================= PERGUNTAS DE SAÚDE =================
+const perguntas = [
+    { id: 'q1', txt: 'Possui alguma condição médica diagnosticada que exija cuidado durante exercícios?' },
+    { id: 'q2', txt: 'Possui condição psicológica, psiquiátrica ou do neurodesenvolvimento que demande atenção?' },
+    { id: 'q3', txt: 'Possui deficiência, limitação física, dificuldade de mobilidade ou restrição de movimentos?' },
+    { id: 'q4', txt: 'Tem histórico de lesão, cirurgia ou fratura que possa afetar o treinamento?' },
+    { id: 'q5', txt: 'Usa medicamento contínuo que possa interferir no esforço físico ou na atenção?' },
+    { id: 'q6', txt: 'Possui alergia relevante para situações de emergência?' },
+    { id: 'q7', txt: 'Já teve desmaio, dor no peito ou falta de ar intensa durante atividade física?' },
+    { id: 'q8', txt: 'Recebeu orientação médica para evitar ou restringir exercícios físicos?' }
+];
+
+const saudeContainer = document.getElementById('saudeContainer');
+perguntas.forEach((p, idx) => {
+    const row = document.createElement('div');
+    row.className = 'saude-row';
+    row.innerHTML = `
+        <div class="pergunta">${String(idx+1).padStart(2,'0')}. ${p.txt}</div>
+        <div class="resp-opts">
+            <label><input type="radio" name="${p.id}" value="nao" required> Não</label>
+            <label><input type="radio" name="${p.id}" value="sim" required> Sim</label>
+        </div>
+        <div class="detalhe-cond" style="display:none;">
+            <textarea name="${p.id}_detalhe" placeholder="Descreva a condição e cuidados necessários..."></textarea>
+        </div>
+    `;
+    saudeContainer.appendChild(row);
+    row.querySelectorAll(`input[name="${p.id}"]`).forEach(r => {
+        r.addEventListener('change', () => {
+            const det = row.querySelector('.detalhe-cond');
+            det.style.display = (r.value === 'sim' && r.checked) ? 'block' : 'none';
+        });
+    });
+});
+
+// ================= ENVIO =================
+const form = document.getElementById('formInscricao');
+const msgErro = document.getElementById('msgErro');
+const btnEnviar = document.getElementById('btnEnviar');
+
+function mostrarErro(txt) {
+    msgErro.textContent = txt;
+    msgErro.style.display = 'block';
+    msgErro.scrollIntoView({ behavior: 'smooth', block: 'center' });
+}
+
+form.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    msgErro.style.display = 'none';
+
+    // Valida telefone de emergência diferente
+    const telAluno = form.telefone.value.replace(/\D/g, '');
+    const telEmerg = form.emerg_telefone.value.replace(/\D/g, '');
+    if (telAluno && telAluno === telEmerg) {
+        return mostrarErro('O telefone de emergência não pode ser o mesmo número do aluno.');
+    }
+
+    // Valida menor de 18
+    const idade = calcIdade();
+    if (idade !== null && idade < 18) {
+        if (!form.resp_nome.value.trim() || !form.resp_telefone.value.trim()) {
+            return mostrarErro('Aluno menor de 18 anos: preencha nome e telefone do responsável legal.');
+        }
+    }
+
+    // Monta saúde
+    const saude = {};
+    for (const p of perguntas) {
+        const sel = form.querySelector(`input[name="${p.id}"]:checked`);
+        if (!sel) return mostrarErro(`Responda a pergunta ${p.id.toUpperCase()} sobre saúde.`);
+        saude[p.id] = sel.value;
+        if (sel.value === 'sim') {
+            saude[`${p.id}_detalhe`] = form.querySelector(`textarea[name="${p.id}_detalhe"]`).value.trim();
+        }
+    }
+
+    // Valida autorização
+    const aut = form.querySelector('input[name="autorizou_dados"]:checked');
+    if (!aut) return mostrarErro('É necessário autorizar o uso das informações de saúde.');
+    if (aut.value !== 'sim') return mostrarErro('A autorização de uso das informações de saúde precisa ser "Sim".');
+
+    // Monta payload
+    const payload = {
+        nome: form.nome.value,
+        data_nascimento: form.data_nascimento.value,
+        telefone: form.telefone.value,
+        turma: form.turma.value,
+        periodo: form.periodo.value,
+        horario: form.horario.value,
+        ja_muaythai: form.ja_muaythai.value,
+        ja_outra_arte: form.ja_outra_arte.value,
+        modalidade: form.modalidade.value,
+        tempo_pratica: form.tempo_pratica.value,
+        objetivo: form.objetivo.value,
+        resp_nome: form.resp_nome.value,
+        resp_parentesco: form.resp_parentesco.value,
+        resp_telefone: form.resp_telefone.value,
+        emerg_nome: form.emerg_nome.value,
+        emerg_parentesco: form.emerg_parentesco.value,
+        emerg_telefone: form.emerg_telefone.value,
+        saude,
+        adaptacoes: form.adaptacoes.value,
+        autorizou_dados: aut.value
+    };
+
+    btnEnviar.disabled = true;
+    btnEnviar.textContent = 'Processando...';
+
+    try {
+        const r = await fetch('/api/inscricao', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+        });
+        const data = await r.json();
+
+        if (!data.ok) {
+            btnEnviar.disabled = false;
+            btnEnviar.textContent = 'Gerar Contrato e Concluir Inscrição';
+            return mostrarErro(data.erro || 'Erro ao processar inscrição.');
+        }
+
+        // Sucesso
+        form.style.display = 'none';
+        const box = document.getElementById('sucessoBox');
+        box.classList.add('active');
+        document.getElementById('numExibido').textContent = data.numero_cadastro;
+        document.getElementById('dataExibida').textContent =
+            new Date().toLocaleString('pt-BR', { timeZone: 'America/Sao_Paulo' });
+        document.getElementById('linkContrato').href = `/api/contrato/${data.numero_cadastro}`;
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+
+    } catch (err) {
+        console.error(err);
+        btnEnviar.disabled = false;
+        btnEnviar.textContent = 'Gerar Contrato e Concluir Inscrição';
+        mostrarErro('Erro de conexão. Tente novamente.');
+    }
+});
+</script>
+<script src="js/main.js"></script>
+</body>
+</html>
