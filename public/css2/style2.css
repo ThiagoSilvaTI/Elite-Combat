@@ -1236,3 +1236,22 @@ footer::before {
         font-size: 1.7rem;
     }
 }
+/* CARRINHO FLUTUANTE VERMELHO */
+.cart-floating {
+    background: linear-gradient(135deg, #D90429, #FF1A40);
+    border-color: #FF1A40;
+    box-shadow: 0 10px 40px rgba(255, 26, 64, 0.5);
+}
+.cart-floating:hover { box-shadow: 0 15px 60px rgba(255, 26, 64, 0.9); }
+.cart-floating .cart-count { background: #FFC800; color: #000; }
+
+/* MODAL VERMELHO */
+.cart-modal { background: #120303; border-color: #FF1A40; }
+.cart-modal-header { background: #120303; border-bottom-color: rgba(255, 26, 64, 0.3); }
+.cart-item-qtd button { border-color: #FF1A40; }
+.cart-item-qtd button:active { background: #FF1A40; }
+.cart-item-sub { color: #FF1A40; }
+.cart-modal-total { border-top-color: #FF1A40; }
+.cart-modal-total strong { color: #FF1A40; }
+.cart-modal-form input,
+.cart-modal-form textarea { border-color: rgba(255, 26, 64, 0.3); }
