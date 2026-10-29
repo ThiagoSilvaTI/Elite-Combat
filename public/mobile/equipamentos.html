@@ -24,6 +24,303 @@
       }
     })();
     </script>
+    <style>
+        /* ===== LOJA MOBILE ===== */
+        .shop-filters {
+            display: flex;
+            gap: 8px;
+            overflow-x: auto;
+            padding-bottom: 4px;
+            margin-bottom: 20px;
+            -webkit-overflow-scrolling: touch;
+        }
+        .shop-filters button {
+            flex-shrink: 0;
+            padding: 10px 18px;
+            background: transparent;
+            border: 1px solid var(--blue-core, #0033A0);
+            color: #fff;
+            font-family: var(--font-display, 'Anton', sans-serif);
+            font-size: 0.8rem;
+            letter-spacing: 1.5px;
+            text-transform: uppercase;
+            border-radius: 6px;
+            cursor: pointer;
+            white-space: nowrap;
+        }
+        .shop-filters button.active {
+            background: var(--blue-core, #0033A0);
+            border-color: var(--blue-glow, #0066FF);
+        }
+
+        .shop-grid {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 16px;
+            margin-bottom: 30px;
+        }
+
+        .shop-card {
+            background: var(--deep-sea, #030A18);
+            border: 1px solid rgba(0, 51, 160, 0.3);
+            border-radius: var(--radius, 8px);
+            overflow: hidden;
+            transition: 0.2s;
+        }
+        .shop-card.selected {
+            border-color: var(--blue-glow, #0066FF);
+            box-shadow: 0 0 0 2px rgba(0, 102, 255, 0.4);
+        }
+        .shop-img {
+            width: 100%;
+            height: 240px;
+            overflow: hidden;
+            background: #000;
+        }
+        .shop-img img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+        .shop-info {
+            padding: 16px;
+            text-align: center;
+        }
+        .shop-info .categoria {
+            font-size: 0.65rem;
+            color: var(--gray-light, #9CA8BC);
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            margin-bottom: 4px;
+        }
+        .shop-info h3 {
+            font-family: var(--font-display, 'Anton', sans-serif);
+            font-size: 1.05rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 8px;
+        }
+        .shop-info .preco {
+            color: var(--blue-glow, #0066FF);
+            font-family: var(--font-display, 'Anton', sans-serif);
+            font-size: 1.25rem;
+            letter-spacing: 1px;
+            margin-bottom: 12px;
+        }
+        .tamanhos {
+            display: flex;
+            gap: 6px;
+            justify-content: center;
+            flex-wrap: wrap;
+            margin-bottom: 12px;
+        }
+        .tamanhos button {
+            width: 44px;
+            height: 44px;
+            background: transparent;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            color: #fff;
+            font-family: inherit;
+            font-weight: 700;
+            font-size: 0.85rem;
+            border-radius: 6px;
+            cursor: pointer;
+        }
+        .tamanhos button.selected {
+            background: var(--blue-glow, #0066FF);
+            border-color: var(--blue-glow, #0066FF);
+        }
+        .btn-add {
+            width: 100%;
+            padding: 14px;
+            background: var(--blue-core, #0033A0);
+            color: #fff;
+            border: none;
+            border-radius: 6px;
+            font-family: var(--font-display, 'Anton', sans-serif);
+            font-size: 0.85rem;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            cursor: pointer;
+        }
+        .btn-add:disabled {
+            background: #1A2535;
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+
+        /* ===== CHECKOUT MOBILE ===== */
+        .checkout-section {
+            background: linear-gradient(135deg, rgba(0, 51, 160, 0.15), rgba(0, 102, 255, 0.05));
+            border: 1px solid var(--blue-glow, #0066FF);
+            border-radius: var(--radius, 8px);
+            padding: 22px 18px;
+            margin-top: 20px;
+        }
+        .checkout-section h3 {
+            font-family: var(--font-display, 'Anton', sans-serif);
+            font-size: 1.2rem;
+            letter-spacing: 1.5px;
+            text-transform: uppercase;
+            margin-bottom: 4px;
+        }
+        .checkout-section .sub {
+            color: var(--gray-light, #9CA8BC);
+            font-size: 0.78rem;
+            margin-bottom: 18px;
+        }
+
+        .itens-lista { margin-bottom: 18px; }
+        .item-row {
+            display: grid;
+            grid-template-columns: 1fr auto;
+            gap: 10px;
+            padding: 12px 0;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+            align-items: center;
+        }
+        .item-row .nome {
+            color: #fff;
+            font-weight: 600;
+            font-size: 0.85rem;
+        }
+        .item-row .nome small {
+            display: block;
+            color: var(--gray-light, #9CA8BC);
+            font-weight: 400;
+            font-size: 0.72rem;
+            margin-top: 2px;
+        }
+        .item-row .qtd-ctrl {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            grid-column: 1;
+        }
+        .item-row .qtd-ctrl button {
+            width: 32px;
+            height: 32px;
+            background: transparent;
+            border: 1px solid var(--blue-core, #0033A0);
+            color: #fff;
+            font-size: 1rem;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        .item-row .qtd-ctrl span {
+            min-width: 24px;
+            text-align: center;
+            font-weight: 700;
+        }
+        .item-row .preco {
+            color: var(--blue-glow, #0066FF);
+            font-weight: 700;
+            text-align: right;
+            font-size: 0.9rem;
+        }
+        .item-row .remover {
+            background: transparent;
+            border: none;
+            color: #FF4D6D;
+            font-size: 1.1rem;
+            cursor: pointer;
+            padding: 4px;
+            justify-self: end;
+            grid-column: 2;
+            grid-row: 1;
+        }
+        .carrinho-vazio {
+            text-align: center;
+            padding: 24px;
+            color: var(--gray-light, #9CA8BC);
+            font-size: 0.85rem;
+        }
+        .total-linha {
+            display: flex;
+            justify-content: space-between;
+            align-items: baseline;
+            padding-top: 16px;
+            border-top: 2px solid var(--blue-glow, #0066FF);
+            margin-bottom: 20px;
+        }
+        .total-linha .lbl {
+            color: var(--gray-light, #9CA8BC);
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+            font-size: 0.75rem;
+        }
+        .total-linha .val {
+            font-family: var(--font-display, 'Anton', sans-serif);
+            font-size: 1.6rem;
+            color: var(--blue-glow, #0066FF);
+        }
+
+        .form-cliente {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            margin-bottom: 18px;
+        }
+        .form-cliente label {
+            display: block;
+            font-size: 0.68rem;
+            letter-spacing: 1.5px;
+            text-transform: uppercase;
+            color: var(--gray-light, #9CA8BC);
+            margin-bottom: 6px;
+            font-weight: 700;
+        }
+        .form-cliente input,
+        .form-cliente textarea {
+            width: 100%;
+            padding: 12px 14px;
+            background: rgba(0, 0, 0, 0.4);
+            border: 1px solid rgba(0, 102, 255, 0.3);
+            color: #fff;
+            font-family: inherit;
+            font-size: 16px;
+            border-radius: 6px;
+        }
+        .form-cliente textarea { min-height: 70px; resize: vertical; }
+
+        .btn-whats {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            width: 100%;
+            padding: 16px;
+            background: linear-gradient(135deg, #25D366, #128C7E);
+            color: #fff;
+            border: none;
+            border-radius: 6px;
+            font-family: var(--font-display, 'Anton', sans-serif);
+            font-size: 0.9rem;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            cursor: pointer;
+            box-shadow: 0 8px 25px rgba(37, 211, 102, 0.4);
+        }
+        .btn-whats:disabled {
+            background: #2A3A3A;
+            opacity: 0.5;
+            cursor: not-allowed;
+            box-shadow: none;
+        }
+        .btn-whats svg { width: 20px; height: 20px; }
+
+        .aviso-form {
+            background: rgba(255, 200, 0, 0.1);
+            border-left: 3px solid #FFC800;
+            padding: 10px 12px;
+            color: #FFC800;
+            font-size: 0.8rem;
+            margin-bottom: 14px;
+            border-radius: 4px;
+            display: none;
+        }
+        .aviso-form.active { display: block; }
+    </style>
 </head>
 <body>
 
@@ -52,47 +349,54 @@
 
 <section class="section">
     <div class="section-header">
-        <h2 class="section-title">Uniformes e <span>Equipamentos</span></h2>
+        <h2 class="section-title">Loja <span>Elite</span></h2>
         <div class="section-number">03</div>
     </div>
 
-    <div class="cards">
-        <div class="gear-card">
-            <div class="gear-img">
-                <img src="https://images.unsplash.com/photo-1595078475328-1ab05d0a6a0e?q=80&w=600&auto=format&fit=crop" alt="Short" loading="lazy">
+    <div class="shop-filters">
+        <button class="filtro active" data-filtro="todos">Todos</button>
+        <button class="filtro" data-filtro="camisa">Camisas</button>
+        <button class="filtro" data-filtro="short">Shorts</button>
+    </div>
+
+    <div class="shop-grid" id="shopGrid"></div>
+
+    <div class="checkout-section" id="checkoutSection">
+        <h3>Finalizar Pedido</h3>
+        <p class="sub">Revise os itens e envie pelo WhatsApp.</p>
+
+        <div class="itens-lista" id="itensLista">
+            <div class="carrinho-vazio">Nenhum item selecionado ainda.</div>
+        </div>
+
+        <div class="total-linha" id="totalLinha" style="display: none;">
+            <span class="lbl">Total</span>
+            <span class="val" id="totalValor">R$ 0,00</span>
+        </div>
+
+        <div class="aviso-form" id="avisoForm"></div>
+
+        <div class="form-cliente">
+            <div>
+                <label>Nome completo *</label>
+                <input type="text" id="clienteNome" placeholder="Seu nome">
             </div>
-            <div class="gear-info">
-                <h3>Short Elite</h3>
-                <div class="price">Consulte</div>
+            <div>
+                <label>Telefone / WhatsApp *</label>
+                <input type="tel" id="clienteTelefone" placeholder="(99) 99999-9999">
+            </div>
+            <div>
+                <label>Observações (opcional)</label>
+                <textarea id="clienteObs" placeholder="Ex.: Prefiro retirar na academia..."></textarea>
             </div>
         </div>
-        <div class="gear-card">
-            <div class="gear-img">
-                <img src="https://images.unsplash.com/photo-1583743814966-8936f5b7be1a?q=80&w=600&auto=format&fit=crop" alt="Camisa" loading="lazy">
-            </div>
-            <div class="gear-info">
-                <h3>Camisa Dry-Fit</h3>
-                <div class="price">Consulte</div>
-            </div>
-        </div>
-        <div class="gear-card">
-            <div class="gear-img">
-                <img src="https://images.unsplash.com/photo-1517438476312-10d79c077509?q=80&w=600&auto=format&fit=crop" alt="Bandagem" loading="lazy">
-            </div>
-            <div class="gear-info">
-                <h3>Bandagem 4m</h3>
-                <div class="price">Consulte</div>
-            </div>
-        </div>
-        <div class="gear-card">
-            <div class="gear-img">
-                <img src="https://images.unsplash.com/photo-1599058917212-d750089bc07e?q=80&w=600&auto=format&fit=crop" alt="Protetor Bucal" loading="lazy">
-            </div>
-            <div class="gear-info">
-                <h3>Protetor Bucal</h3>
-                <div class="price">Consulte</div>
-            </div>
-        </div>
+
+        <button class="btn-whats" id="btnWhats" disabled>
+            <svg viewBox="0 0 24 24" fill="currentColor">
+                <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/>
+            </svg>
+            <span>Enviar pelo WhatsApp</span>
+        </button>
     </div>
 </section>
 
@@ -110,9 +414,8 @@
         </div>
         <div class="footer-col">
             <h4>Social</h4>
-            <a href="https://www.instagram.com/elitecombat_/" target="_blank" rel="noopener">Instagram Academia</a>
-            <a href="https://www.instagram.com/saymon_danilo/" target="_blank" rel="noopener">Instagram Mestre</a>
-            <a href="https://www.instagram.com/arkhamsystems.cod/" target="_blank" rel="noopener">Criador do Site</a>
+            <a href="https://www.instagram.com/elitecombat_/" target="_blank">Instagram Academia</a>
+            <a href="https://www.instagram.com/saymon_danilo/" target="_blank">Instagram Mestre</a>
         </div>
     </div>
     <div class="footer-bottom">
@@ -122,5 +425,275 @@
 
 <button class="back-top" id="backTop" aria-label="Voltar ao topo">↑</button>
 <script src="js/mobile.js"></script>
+
+<script>
+// ================= CONFIGURAÇÃO =================
+const WHATSAPP_NUMERO = '559885201045';
+const MOEDA = 'R$ ';
+
+// ================= PRODUTOS =================
+const PRODUTOS = [
+    // ---- CAMISAS (2) ----
+    {
+        id: 'camisa-01',
+        nome: 'Camisa Dry-Fit Elite Combat',
+        categoria: 'camisa',
+        preco: 79.90,
+        img: 'https://images.unsplash.com/photo-1583743814966-8936f5b7be1a?q=80&w=600&auto=format&fit=crop',
+        tamanhos: ['P', 'M', 'G', 'GG'],
+    },
+    {
+        id: 'camisa-02',
+        nome: 'Camisa Treino Premium',
+        categoria: 'camisa',
+        preco: 89.90,
+        img: 'https://images.unsplash.com/photo-1595078475328-1ab05d0a6a0e?q=80&w=600&auto=format&fit=crop',
+        tamanhos: ['P', 'M', 'G', 'GG'],
+    },
+    // ---- SHORTS (6) ----
+    {
+        id: 'short-01',
+        nome: 'Short Elite Tradicional',
+        categoria: 'short',
+        preco: 99.90,
+        img: 'https://images.unsplash.com/photo-1591195853828-11db59a44f6b?q=80&w=600&auto=format&fit=crop',
+        tamanhos: ['P', 'M', 'G', 'GG'],
+    },
+    {
+        id: 'short-02',
+        nome: 'Short Elite Combat Pro',
+        categoria: 'short',
+        preco: 119.90,
+        img: 'https://images.unsplash.com/photo-1539533018447-63fcce2678e3?q=80&w=600&auto=format&fit=crop',
+        tamanhos: ['P', 'M', 'G', 'GG'],
+    },
+    {
+        id: 'short-03',
+        nome: 'Short Muay Thai Clássico',
+        categoria: 'short',
+        preco: 109.90,
+        img: 'https://images.unsplash.com/photo-1600185365483-26d7a4cc7519?q=80&w=600&auto=format&fit=crop',
+        tamanhos: ['P', 'M', 'G', 'GG'],
+    },
+    {
+        id: 'short-04',
+        nome: 'Short Treino Black Edition',
+        categoria: 'short',
+        preco: 94.90,
+        img: 'https://images.unsplash.com/photo-1584464491033-06628f3a6b7b?q=80&w=600&auto=format&fit=crop',
+        tamanhos: ['P', 'M', 'G', 'GG'],
+    },
+    {
+        id: 'short-05',
+        nome: 'Short Competição',
+        categoria: 'short',
+        preco: 129.90,
+        img: 'https://images.unsplash.com/photo-1594633312681-425c7b97ccd1?q=80&w=600&auto=format&fit=crop',
+        tamanhos: ['P', 'M', 'G', 'GG'],
+    },
+    {
+        id: 'short-06',
+        nome: 'Short Infantil Elite',
+        categoria: 'short',
+        preco: 79.90,
+        img: 'https://images.unsplash.com/photo-1571945153237-4929e783af4a?q=80&w=600&auto=format&fit=crop',
+        tamanhos: ['4', '6', '8', '10', '12'],
+    },
+];
+
+// ================= ESTADO =================
+const carrinho = {};
+const selecionados = {};
+
+// ================= HELPERS =================
+function formatarPreco(v) {
+    return MOEDA + v.toFixed(2).replace('.', ',');
+}
+
+// ================= GRID =================
+function renderizarGrid(filtro) {
+    const grid = document.getElementById('shopGrid');
+    const lista = filtro === 'todos'
+        ? PRODUTOS
+        : PRODUTOS.filter(p => p.categoria === filtro);
+
+    grid.innerHTML = lista.map(p => `
+        <div class="shop-card" data-id="${p.id}">
+            <div class="shop-img">
+                <img src="${p.img}" alt="${p.nome}" loading="lazy">
+            </div>
+            <div class="shop-info">
+                <div class="categoria">${p.categoria === 'camisa' ? 'Camisa' : 'Short'}</div>
+                <h3>${p.nome}</h3>
+                <div class="preco">${formatarPreco(p.preco)}</div>
+                <div class="tamanhos" data-id="${p.id}">
+                    ${p.tamanhos.map(t => `<button data-tam="${t}">${t}</button>`).join('')}
+                </div>
+                <button class="btn-add" data-add="${p.id}" disabled>Selecione o tamanho</button>
+            </div>
+        </div>
+    `).join('');
+
+    grid.querySelectorAll('.tamanhos').forEach(bloco => {
+        const id = bloco.dataset.id;
+        bloco.querySelectorAll('button').forEach(btn => {
+            btn.addEventListener('click', () => {
+                bloco.querySelectorAll('button').forEach(b => b.classList.remove('selected'));
+                btn.classList.add('selected');
+                selecionados[id] = btn.dataset.tam;
+                const card = grid.querySelector(`.shop-card[data-id="${id}"]`);
+                card.classList.add('selected');
+                const addBtn = card.querySelector('.btn-add');
+                addBtn.disabled = false;
+                addBtn.textContent = 'Adicionar ao pedido';
+            });
+        });
+    });
+
+    grid.querySelectorAll('.btn-add').forEach(btn => {
+        btn.addEventListener('click', () => {
+            const id = btn.dataset.add;
+            const tam = selecionados[id];
+            if (!tam) return;
+            adicionarAoCarrinho(id, tam);
+        });
+    });
+}
+
+// ================= CARRINHO =================
+function adicionarAoCarrinho(id, tamanho) {
+    const produto = PRODUTOS.find(p => p.id === id);
+    if (!produto) return;
+    const chave = id + '|' + tamanho;
+    if (carrinho[chave]) carrinho[chave].qtd++;
+    else carrinho[chave] = { produto, tamanho, qtd: 1 };
+    atualizarCarrinho();
+}
+
+function removerDoCarrinho(chave) {
+    delete carrinho[chave];
+    atualizarCarrinho();
+}
+
+function alterarQtd(chave, delta) {
+    if (!carrinho[chave]) return;
+    carrinho[chave].qtd += delta;
+    if (carrinho[chave].qtd <= 0) delete carrinho[chave];
+    atualizarCarrinho();
+}
+
+function atualizarCarrinho() {
+    const lista = document.getElementById('itensLista');
+    const totalLinha = document.getElementById('totalLinha');
+    const totalValor = document.getElementById('totalValor');
+    const btnWhats = document.getElementById('btnWhats');
+
+    const chaves = Object.keys(carrinho);
+    if (!chaves.length) {
+        lista.innerHTML = '<div class="carrinho-vazio">Nenhum item selecionado ainda.</div>';
+        totalLinha.style.display = 'none';
+        btnWhats.disabled = true;
+        return;
+    }
+
+    let total = 0;
+    lista.innerHTML = chaves.map(chave => {
+        const item = carrinho[chave];
+        const sub = item.produto.preco * item.qtd;
+        total += sub;
+        return `
+            <div class="item-row">
+                <div class="nome">
+                    ${item.produto.nome}
+                    <small>Tamanho: ${item.tamanho} · ${formatarPreco(item.produto.preco)}</small>
+                </div>
+                <button class="remover" data-rem="${chave}">✕</button>
+                <div class="qtd-ctrl">
+                    <button data-menos="${chave}">−</button>
+                    <span>${item.qtd}</span>
+                    <button data-mais="${chave}">+</button>
+                </div>
+                <div class="preco">${formatarPreco(sub)}</div>
+            </div>
+        `;
+    }).join('');
+
+    totalValor.textContent = formatarPreco(total);
+    totalLinha.style.display = 'flex';
+    btnWhats.disabled = false;
+
+    lista.querySelectorAll('[data-menos]').forEach(b =>
+        b.addEventListener('click', () => alterarQtd(b.dataset.menos, -1)));
+    lista.querySelectorAll('[data-mais]').forEach(b =>
+        b.addEventListener('click', () => alterarQtd(b.dataset.mais, 1)));
+    lista.querySelectorAll('[data-rem]').forEach(b =>
+        b.addEventListener('click', () => removerDoCarrinho(b.dataset.rem)));
+}
+
+// ================= WHATSAPP =================
+document.getElementById('btnWhats').addEventListener('click', () => {
+    const nome = document.getElementById('clienteNome').value.trim();
+    const tel = document.getElementById('clienteTelefone').value.trim();
+    const obs = document.getElementById('clienteObs').value.trim();
+    const aviso = document.getElementById('avisoForm');
+
+    if (!nome || !tel) {
+        aviso.textContent = 'Preencha seu nome e telefone para continuar.';
+        aviso.classList.add('active');
+        aviso.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        return;
+    }
+    aviso.classList.remove('active');
+
+    const chaves = Object.keys(carrinho);
+    if (!chaves.length) return;
+
+    let total = 0;
+    let itensTexto = '';
+    chaves.forEach((chave, idx) => {
+        const item = carrinho[chave];
+        const sub = item.produto.preco * item.qtd;
+        total += sub;
+        itensTexto += `\n${idx + 1}. *${item.produto.nome}*\n   Tamanho: ${item.tamanho}\n   Qtd: ${item.qtd}\n   Subtotal: ${formatarPreco(sub)}`;
+    });
+
+    const mensagem =
+        `*NOVO PEDIDO — ELITE COMBAT*\n\n` +
+        `*Nome:* ${nome}\n` +
+        `*Telefone:* ${tel}\n` +
+        `${obs ? `*Observações:* ${obs}\n` : ''}` +
+        `\n*ITENS DO PEDIDO:*${itensTexto}\n\n` +
+        `*TOTAL:* ${formatarPreco(total)}\n\n` +
+        `_Pedido enviado pelo site Elite Combat_`;
+
+    const url = `https://wa.me/${WHATSAPP_NUMERO}?text=${encodeURIComponent(mensagem)}`;
+    window.open(url, '_blank');
+
+    Object.keys(carrinho).forEach(k => delete carrinho[k]);
+    document.getElementById('clienteNome').value = '';
+    document.getElementById('clienteTelefone').value = '';
+    document.getElementById('clienteObs').value = '';
+    atualizarCarrinho();
+    document.querySelectorAll('.shop-card').forEach(c => c.classList.remove('selected'));
+    document.querySelectorAll('.tamanhos button').forEach(b => b.classList.remove('selected'));
+    document.querySelectorAll('.btn-add').forEach(b => {
+        b.disabled = true;
+        b.textContent = 'Selecione o tamanho';
+    });
+});
+
+// ================= FILTROS =================
+document.querySelectorAll('.filtro').forEach(btn => {
+    btn.addEventListener('click', () => {
+        document.querySelectorAll('.filtro').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        renderizarGrid(btn.dataset.filtro);
+    });
+});
+
+// ================= INIT =================
+renderizarGrid('todos');
+atualizarCarrinho();
+</script>
 </body>
 </html>
