@@ -5,7 +5,7 @@ const crypto = require('crypto');
 const Database = require('better-sqlite3');
 
 const app = express();
-const PORT = 3000;
+const PORT = process.env.PORT || 3000;
 
 // ================== BANCO DE DADOS ==================
 const DB_DIR = path.join(__dirname, 'database');
@@ -372,6 +372,180 @@ function gerarContrato(d) {
   linhas.push('================================================================');
   return linhas.join('\n');
 }
+
+// ================== ADMIN ==================
+const ADMIN_USER = 'MuayThai';
+const ADMIN_PASS = 'NakMuay';
+
+// Middleware de autenticação básica
+function exigirAdmin(req, res, next) {
+  const auth = req.headers.authorization;
+  if (!auth || !auth.startsWith('Basic ')) {
+    res.setHeader('WWW-Authenticate', 'Basic realm="Elite Combat Admin"');
+    return res.status(401).send('Autenticação necessária.');
+  }
+  const [user, pass] = Buffer.from(auth.split(' ')[1], 'base64')
+    .toString()
+    .split(':');
+
+  if (user === ADMIN_USER && pass === ADMIN_PASS) {
+    return next();
+  }
+  res.setHeader('WWW-Authenticate', 'Basic realm="Elite Combat Admin"');
+  return res.status(401).send('Usuário ou senha inválidos.');
+}
+
+// Página HTML do admin
+app.get('/admin', exigirAdmin, (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'admin.html'));
+});
+
+// API: listar todas as inscrições
+app.get('/api/admin/inscricoes', exigirAdmin, (req, res) => {
+  try {
+    const rows = db
+      .prepare(
+        `SELECT id, numero_cadastro, data_preenchimento, nome, idade, telefone,
+                turma, periodo, horario, objetivo,
+                resp_nome, resp_telefone,
+                emerg_nome, emerg_telefone,
+                saude_json, adaptacoes,
+                contrato_path, criado_em
+         FROM inscricoes
+         ORDER BY id DESC`
+      )
+      .all();
+
+    // Parse do JSON de saúde
+    const inscricoes = rows.map((r) => ({
+      ...r,
+      saude: r.saude_json ? JSON.parse(r.saude_json) : {},
+      tem_contrato: !!(r.contrato_path && fs.existsSync(r.contrato_path)),
+    }));
+
+    return res.json({ ok: true, total: inscricoes.length, inscricoes });
+  } catch (err) {
+    console.error('Erro admin lista:', err);
+    return res.status(500).json({ ok: false, erro: 'Erro ao listar inscrições.' });
+  }
+});
+
+// API: exportar tudo em JSON (backup)
+app.get('/api/admin/exportar', exigirAdmin, (req, res) => {
+  try {
+    const rows = db.prepare('SELECT * FROM inscricoes ORDER BY id ASC').all();
+    const payload = {
+      exportado_em: new Date().toISOString(),
+      total: rows.length,
+      inscricoes: rows,
+    };
+    res.setHeader(
+      'Content-Disposition',
+      `attachment; filename="elite_combat_backup_${Date.now()}.json"`
+    );
+    res.setHeader('Content-Type', 'application/json');
+    return res.send(JSON.stringify(payload, null, 2));
+  } catch (err) {
+    console.error('Erro admin export:', err);
+    return res.status(500).json({ ok: false, erro: 'Erro ao exportar.' });
+  }
+});
+
+// API: importar backup JSON
+app.post('/api/admin/importar', exigirAdmin, express.json({ limit: '10mb' }), (req, res) => {
+  try {
+    const { inscricoes } = req.body || {};
+    if (!Array.isArray(inscricoes)) {
+      return res.status(400).json({ ok: false, erro: 'JSON inválido.' });
+    }
+
+    const stmt = db.prepare(`
+      INSERT OR IGNORE INTO inscricoes (
+        numero_cadastro, data_preenchimento, responsavel_atendimento,
+        nome, data_nascimento, idade, telefone,
+        turma, periodo, horario, ja_muaythai, ja_outra_arte, modalidade, tempo_pratica, objetivo,
+        resp_nome, resp_parentesco, resp_telefone,
+        emerg_nome, emerg_parentesco, emerg_telefone,
+        saude_json, adaptacoes, autorizou_dados,
+        contrato_path, criado_em
+      ) VALUES (
+        @numero_cadastro, @data_preenchimento, @responsavel_atendimento,
+        @nome, @data_nascimento, @idade, @telefone,
+        @turma, @periodo, @horario, @ja_muaythai, @ja_outra_arte, @modalidade, @tempo_pratica, @objetivo,
+        @resp_nome, @resp_parentesco, @resp_telefone,
+        @emerg_nome, @emerg_parentesco, @emerg_telefone,
+        @saude_json, @adaptacoes, @autorizou_dados,
+        @contrato_path, @criado_em
+      )
+    `);
+
+    let importados = 0;
+    const tx = db.transaction((lista) => {
+      for (const r of lista) {
+        // Só importa se número de cadastro existir
+        if (!r.numero_cadastro) continue;
+        const info = stmt.run({
+          numero_cadastro: r.numero_cadastro,
+          data_preenchimento: r.data_preenchimento || new Date().toLocaleString('pt-BR'),
+          responsavel_atendimento: r.responsavel_atendimento || 'BDST',
+          nome: r.nome || '',
+          data_nascimento: r.data_nascimento || '',
+          idade: r.idade || 0,
+          telefone: r.telefone || '',
+          turma: r.turma || '',
+          periodo: r.periodo || null,
+          horario: r.horario || null,
+          ja_muaythai: r.ja_muaythai || null,
+          ja_outra_arte: r.ja_outra_arte || null,
+          modalidade: r.modalidade || null,
+          tempo_pratica: r.tempo_pratica || null,
+          objetivo: r.objetivo || null,
+          resp_nome: r.resp_nome || null,
+          resp_parentesco: r.resp_parentesco || null,
+          resp_telefone: r.resp_telefone || null,
+          emerg_nome: r.emerg_nome || '',
+          emerg_parentesco: r.emerg_parentesco || null,
+          emerg_telefone: r.emerg_telefone || '',
+          saude_json: r.saude_json || '{}',
+          adaptacoes: r.adaptacoes || null,
+          autorizou_dados: r.autorizou_dados || 'sim',
+          contrato_path: null, // será regenerado no próximo download
+          criado_em: r.criado_em || new Date().toISOString(),
+        });
+        if (info.changes > 0) importados++;
+      }
+    });
+
+    tx(inscricoes);
+    return res.json({ ok: true, importados, ignorados: inscricoes.length - importados });
+  } catch (err) {
+    console.error('Erro admin import:', err);
+    return res.status(500).json({ ok: false, erro: 'Erro ao importar.' });
+  }
+});
+
+// API: remover inscrição
+app.delete('/api/admin/inscricao/:numero', exigirAdmin, (req, res) => {
+  try {
+    const { numero } = req.params;
+    const row = db
+      .prepare('SELECT contrato_path FROM inscricoes WHERE numero_cadastro = ?')
+      .get(numero);
+
+    if (!row) return res.status(404).json({ ok: false, erro: 'Não encontrado.' });
+
+    // Remove arquivo de contrato
+    if (row.contrato_path && fs.existsSync(row.contrato_path)) {
+      try { fs.unlinkSync(row.contrato_path); } catch (e) {}
+    }
+
+    db.prepare('DELETE FROM inscricoes WHERE numero_cadastro = ?').run(numero);
+    return res.json({ ok: true });
+  } catch (err) {
+    console.error('Erro admin delete:', err);
+    return res.status(500).json({ ok: false, erro: 'Erro ao remover.' });
+  }
+});
 
 app.listen(PORT, () => {
   console.log(`Servidor Elite Combat rodando em http://localhost:${PORT}`);
