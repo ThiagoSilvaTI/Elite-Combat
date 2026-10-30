@@ -44,7 +44,7 @@
             nome: 'Short Muay Thai Azul',
             categoria: 'short',
             preco: 100.00,
-            img: 'https://www.image2url.com/r2/default/images/1793316887006-99a281ec-21a8-4912-84ba-ecf006f77918.png',
+            img: 'https://www.image2url.com/r2/default/images/1793377301828-d2e8a846-7d59-424d-8e23-c2f3ea0c4011.png',
             tamanhos: ['P', 'M', 'G', 'GG'],
         },
         {
