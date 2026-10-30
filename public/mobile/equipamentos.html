@@ -2,91 +2,81 @@
 <html lang="pt-BR">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <meta name="theme-color" content="#000205">
     <title>Equipamentos | Elite Combat</title>
     <link rel="stylesheet" href="css/mobile.css">
     <script>
     (function () {
       var pref = document.cookie.match(/(?:^|;\s*)preferencia_versao=([^;]+)/);
       if (pref) return;
-      var isMobile =
-        /Android|webOS|iPhone|iPad|iPod|BlackBerry|Windows Phone|Opera Mini|IEMobile|Mobile/i.test(navigator.userAgent) ||
-        (navigator.maxTouchPoints > 1 && /Macintosh/i.test(navigator.userAgent));
-      if (isMobile) {
+
+      var isDesktop =
+        !/Android|webOS|iPhone|iPad|iPod|BlackBerry|Windows Phone|Opera Mini|IEMobile|Mobile/i.test(
+          navigator.userAgent
+        ) &&
+        !(navigator.maxTouchPoints > 1 && /Macintosh/i.test(navigator.userAgent));
+
+      if (isDesktop) {
         var path = window.location.pathname;
-        if (path.indexOf('/mobile/') === -1) {
-          var arquivo = path.split('/').pop() || 'index.html';
-          window.location.replace('/mobile/' + arquivo + window.location.search);
-        }
+        var arquivo = path.split('/').pop() || 'index.html';
+        window.location.replace('/' + arquivo + window.location.search);
       }
     })();
     </script>
     <style>
-        /* ===== LOJA ===== */
+        /* ===== LOJA MOBILE ===== */
         .shop-filters {
             display: flex;
-            gap: 12px;
-            flex-wrap: wrap;
-            margin-bottom: 40px;
-            justify-content: center;
+            gap: 8px;
+            overflow-x: auto;
+            padding-bottom: 4px;
+            margin-bottom: 20px;
+            -webkit-overflow-scrolling: touch;
+            scrollbar-width: none;
         }
+        .shop-filters::-webkit-scrollbar { display: none; }
         .shop-filters button {
-            padding: 12px 26px;
+            flex-shrink: 0;
+            padding: 10px 18px;
             background: transparent;
-            border: 2px solid var(--blue-core, #0033A0);
-            color: var(--white, #fff);
+            border: 1px solid var(--blue-core, #0033A0);
+            color: #fff;
             font-family: var(--font-display, 'Anton', sans-serif);
-            font-size: 0.9rem;
-            letter-spacing: 2px;
+            font-size: 0.8rem;
+            letter-spacing: 1.5px;
             text-transform: uppercase;
+            border-radius: 6px;
             cursor: pointer;
-            transition: 0.3s;
+            white-space: nowrap;
+            transition: 0.2s;
         }
-        .shop-filters button.active,
-        .shop-filters button:hover {
+        .shop-filters button.active {
             background: var(--blue-core, #0033A0);
             border-color: var(--blue-glow, #0066FF);
-            box-shadow: 0 0 25px rgba(0, 102, 255, 0.5);
+            box-shadow: 0 0 15px rgba(0, 102, 255, 0.4);
         }
 
         .shop-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-            gap: 28px;
-            margin-bottom: 60px;
+            grid-template-columns: 1fr;
+            gap: 16px;
+            margin-bottom: 30px;
         }
         .shop-card {
             background: var(--deep-sea, #030A18);
             border: 1px solid rgba(0, 51, 160, 0.3);
-            transition: 0.4s;
-            position: relative;
+            border-radius: var(--radius, 8px);
             overflow: hidden;
-        }
-        .shop-card:hover {
-            border-color: var(--blue-glow, #0066FF);
-            transform: translateY(-6px);
-            box-shadow: 0 25px 50px rgba(0, 51, 160, 0.4);
+            transition: border-color 0.2s;
         }
         .shop-card.selected {
             border-color: var(--blue-glow, #0066FF);
-            box-shadow: 0 0 0 3px rgba(0, 102, 255, 0.5);
-        }
-        .shop-card.selected::after {
-            content: '✓ SELECIONADO';
-            position: absolute;
-            top: 12px;
-            right: 12px;
-            background: var(--blue-glow, #0066FF);
-            color: #fff;
-            font-size: 0.65rem;
-            font-weight: 800;
-            letter-spacing: 2px;
-            padding: 6px 12px;
-            z-index: 5;
+            box-shadow: 0 0 0 2px rgba(0, 102, 255, 0.4);
         }
         .shop-img {
             width: 100%;
-            height: 280px;
+            height: 240px;
             overflow: hidden;
             background: #000;
         }
@@ -94,16 +84,13 @@
             width: 100%;
             height: 100%;
             object-fit: cover;
-            transition: 0.6s;
         }
-        .shop-card:hover .shop-img img { transform: scale(1.08); }
         .shop-info {
-            padding: 20px;
+            padding: 16px;
             text-align: center;
-            border-top: 1px solid rgba(0, 51, 160, 0.25);
         }
         .shop-info .categoria {
-            font-size: 0.7rem;
+            font-size: 0.65rem;
             color: var(--gray-light, #9CA8BC);
             letter-spacing: 2px;
             text-transform: uppercase;
@@ -111,38 +98,38 @@
         }
         .shop-info h3 {
             font-family: var(--font-display, 'Anton', sans-serif);
-            font-size: 1.2rem;
+            font-size: 1.05rem;
             text-transform: uppercase;
             letter-spacing: 1px;
-            margin-bottom: 6px;
+            margin-bottom: 8px;
         }
         .shop-info .preco {
             color: var(--blue-glow, #0066FF);
             font-family: var(--font-display, 'Anton', sans-serif);
-            font-size: 1.4rem;
+            font-size: 1.25rem;
             letter-spacing: 1px;
-            margin-bottom: 14px;
+            margin-bottom: 12px;
         }
         .tamanhos {
             display: flex;
             gap: 6px;
             justify-content: center;
             flex-wrap: wrap;
-            margin-bottom: 14px;
+            margin-bottom: 12px;
         }
         .tamanhos button {
-            width: 42px;
-            height: 42px;
+            width: 44px;
+            height: 44px;
             background: transparent;
             border: 1px solid rgba(255, 255, 255, 0.2);
-            color: var(--white, #fff);
+            color: #fff;
             font-family: inherit;
             font-weight: 700;
-            font-size: 0.8rem;
+            font-size: 0.85rem;
+            border-radius: 6px;
             cursor: pointer;
-            transition: 0.2s;
+            transition: 0.15s;
         }
-        .tamanhos button:hover { border-color: var(--blue-glow, #0066FF); }
         .tamanhos button.selected {
             background: var(--blue-glow, #0066FF);
             border-color: var(--blue-glow, #0066FF);
@@ -151,40 +138,37 @@
             width: 100%;
             padding: 14px;
             background: var(--blue-core, #0033A0);
-            color: var(--white, #fff);
+            color: #fff;
             border: none;
+            border-radius: 6px;
             font-family: var(--font-display, 'Anton', sans-serif);
-            font-size: 0.9rem;
+            font-size: 0.85rem;
             letter-spacing: 2px;
             text-transform: uppercase;
             cursor: pointer;
-            transition: 0.3s;
-        }
-        .btn-add:hover {
-            background: var(--blue-glow, #0066FF);
-            box-shadow: 0 10px 30px rgba(0, 102, 255, 0.6);
+            transition: background 0.2s;
         }
         .btn-add:disabled {
             background: #1A2535;
-            cursor: not-allowed;
             opacity: 0.6;
+            cursor: not-allowed;
         }
 
         /* ===== CARRINHO FLUTUANTE ===== */
         .cart-floating {
             position: fixed;
-            bottom: 24px;
-            right: 24px;
+            bottom: 20px;
+            right: 16px;
             display: flex;
             align-items: center;
-            gap: 10px;
-            padding: 14px 20px;
+            gap: 8px;
+            padding: 12px 18px;
             background: linear-gradient(135deg, #0033A0, #0066FF);
             color: #fff;
             border: 2px solid #0066FF;
             border-radius: 50px;
             cursor: pointer;
-            box-shadow: 0 10px 40px rgba(0, 102, 255, 0.5);
+            box-shadow: 0 10px 30px rgba(0, 102, 255, 0.5);
             z-index: 1500;
             font-family: var(--font-display, 'Anton', sans-serif);
             letter-spacing: 1px;
@@ -198,22 +182,21 @@
             transform: translateY(0);
             pointer-events: auto;
         }
-        .cart-floating svg { width: 22px; height: 22px; flex-shrink: 0; }
+        .cart-floating svg { width: 20px; height: 20px; }
         .cart-floating .cart-count {
             background: #FFC800;
             color: #000;
-            font-size: 0.75rem;
+            font-size: 0.7rem;
             font-weight: 900;
-            min-width: 22px;
-            height: 22px;
+            min-width: 20px;
+            height: 20px;
             border-radius: 50%;
             display: flex;
             align-items: center;
             justify-content: center;
-            padding: 0 6px;
+            padding: 0 5px;
         }
-        .cart-floating .cart-total { font-size: 0.9rem; color: #fff; }
-        .cart-floating:hover { box-shadow: 0 15px 60px rgba(0, 102, 255, 0.9); transform: translateY(-3px); }
+        .cart-floating .cart-total { font-size: 0.8rem; }
         .cart-floating.pulse { animation: cartPulse 0.4s ease-out; }
         @keyframes cartPulse {
             0%,100% { transform: scale(1); }
@@ -224,13 +207,13 @@
         .cart-modal-bg {
             position: fixed;
             inset: 0;
-            background: rgba(0, 0, 0, 0.85);
+            background: rgba(0, 0, 0, 0.88);
             backdrop-filter: blur(6px);
+            -webkit-backdrop-filter: blur(6px);
             z-index: 2000;
             display: none;
-            align-items: center;
+            align-items: flex-end;
             justify-content: center;
-            padding: 20px;
             opacity: 0;
             transition: opacity 0.3s;
         }
@@ -238,22 +221,21 @@
         .cart-modal {
             background: #030A18;
             border: 1px solid #0066FF;
-            border-radius: 12px;
-            max-width: 600px;
+            border-radius: 16px 16px 0 0;
             width: 100%;
-            max-height: 90vh;
+            max-height: 92vh;
             overflow-y: auto;
             animation: modalIn 0.3s ease-out;
         }
         @keyframes modalIn {
-            from { transform: scale(0.9); opacity: 0; }
-            to   { transform: scale(1); opacity: 1; }
+            from { transform: translateY(100%); }
+            to   { transform: translateY(0); }
         }
         .cart-modal-header {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            padding: 22px 24px;
+            padding: 18px;
             border-bottom: 1px solid rgba(0, 102, 255, 0.3);
             position: sticky;
             top: 0;
@@ -262,8 +244,8 @@
         }
         .cart-modal-header h2 {
             font-family: var(--font-display, 'Anton', sans-serif);
-            font-size: 1.4rem;
-            letter-spacing: 2px;
+            font-size: 1.15rem;
+            letter-spacing: 1.5px;
             text-transform: uppercase;
             color: #fff;
             margin: 0;
@@ -272,49 +254,48 @@
             background: transparent;
             border: none;
             color: #fff;
-            font-size: 1.4rem;
-            cursor: pointer;
+            font-size: 1.2rem;
             width: 36px;
             height: 36px;
+            border-radius: 50%;
             display: flex;
             align-items: center;
             justify-content: center;
-            border-radius: 50%;
-            transition: 0.2s;
+            cursor: pointer;
         }
-        .cart-modal-close:hover { background: rgba(255, 26, 64, 0.2); color: #FF4D6D; }
-        .cart-modal-body { padding: 20px 24px 24px; }
-        .cart-modal-lista { max-height: 280px; overflow-y: auto; margin-bottom: 16px; }
+        .cart-modal-close:active { background: rgba(255, 26, 64, 0.2); color: #FF4D6D; }
+        .cart-modal-body { padding: 16px 18px 22px; }
+        .cart-modal-lista { max-height: 240px; overflow-y: auto; margin-bottom: 14px; }
         .cart-item {
             display: grid;
-            grid-template-columns: 60px 1fr auto;
-            gap: 12px;
+            grid-template-columns: 50px 1fr auto;
+            gap: 10px;
             align-items: center;
-            padding: 12px 0;
+            padding: 10px 0;
             border-bottom: 1px solid rgba(255, 255, 255, 0.06);
         }
         .cart-item img {
-            width: 60px;
-            height: 60px;
+            width: 50px;
+            height: 50px;
             object-fit: cover;
             border-radius: 6px;
         }
         .cart-item-info strong {
             display: block;
-            font-size: 0.85rem;
+            font-size: 0.8rem;
             color: #fff;
             margin-bottom: 2px;
         }
         .cart-item-info small {
             display: block;
-            font-size: 0.7rem;
+            font-size: 0.68rem;
             color: #9CA8BC;
-            margin-bottom: 6px;
+            margin-bottom: 4px;
         }
         .cart-item-qtd { display: flex; align-items: center; gap: 6px; }
         .cart-item-qtd button {
-            width: 26px;
-            height: 26px;
+            width: 28px;
+            height: 28px;
             background: transparent;
             border: 1px solid #0066FF;
             color: #fff;
@@ -323,7 +304,7 @@
             cursor: pointer;
         }
         .cart-item-qtd button:active { background: #0066FF; }
-        .cart-item-qtd span { min-width: 20px; text-align: center; font-weight: 700; font-size: 0.85rem; }
+        .cart-item-qtd span { min-width: 20px; text-align: center; font-weight: 700; font-size: 0.82rem; }
         .cart-item-qtd .cart-remover {
             border-color: #FF4D6D;
             color: #FF4D6D;
@@ -333,39 +314,39 @@
         .cart-item-sub {
             font-weight: 700;
             color: #0066FF;
-            font-size: 0.9rem;
+            font-size: 0.85rem;
             text-align: right;
         }
         .cart-empty {
             text-align: center;
-            padding: 40px 20px;
+            padding: 30px 20px;
             color: #9CA8BC;
-            font-size: 0.9rem;
+            font-size: 0.85rem;
         }
         .cart-modal-total {
             display: flex;
             justify-content: space-between;
             align-items: baseline;
-            padding: 16px 0;
+            padding: 14px 0;
             border-top: 2px solid #0066FF;
-            margin-bottom: 16px;
+            margin-bottom: 14px;
         }
         .cart-modal-total span {
             text-transform: uppercase;
-            letter-spacing: 2px;
-            font-size: 0.8rem;
+            letter-spacing: 1.5px;
+            font-size: 0.72rem;
             color: #9CA8BC;
         }
         .cart-modal-total strong {
             font-family: var(--font-display, 'Anton', sans-serif);
-            font-size: 1.6rem;
+            font-size: 1.4rem;
             color: #0066FF;
         }
         .cart-modal-form {
             display: flex;
             flex-direction: column;
-            gap: 12px;
-            margin-bottom: 16px;
+            gap: 10px;
+            margin-bottom: 14px;
         }
         .cart-modal-form label {
             display: block;
@@ -373,7 +354,7 @@
             letter-spacing: 1.5px;
             text-transform: uppercase;
             color: #9CA8BC;
-            margin-bottom: 5px;
+            margin-bottom: 4px;
             font-weight: 700;
         }
         .cart-modal-form input,
@@ -389,96 +370,80 @@
         }
         .cart-modal-form textarea { min-height: 60px; resize: vertical; }
 
-        /* Aviso form */
         .aviso-form {
             background: rgba(255, 200, 0, 0.1);
             border-left: 3px solid #FFC800;
-            padding: 12px 15px;
+            padding: 10px 12px;
             color: #FFC800;
-            font-size: 0.85rem;
-            margin-bottom: 20px;
+            font-size: 0.8rem;
+            margin-bottom: 14px;
+            border-radius: 4px;
             display: none;
         }
         .aviso-form.active { display: block; }
 
-        /* Botão WhatsApp */
         .btn-whats {
             display: flex;
             align-items: center;
             justify-content: center;
-            gap: 12px;
+            gap: 10px;
             width: 100%;
-            padding: 18px;
+            padding: 16px;
             background: linear-gradient(135deg, #25D366, #128C7E);
             color: #fff;
             border: none;
             border-radius: 6px;
             font-family: var(--font-display, 'Anton', sans-serif);
-            font-size: 1rem;
-            letter-spacing: 2.5px;
+            font-size: 0.9rem;
+            letter-spacing: 2px;
             text-transform: uppercase;
             cursor: pointer;
-            transition: 0.3s;
-            box-shadow: 0 10px 35px rgba(37, 211, 102, 0.4);
-        }
-        .btn-whats:hover {
-            transform: translateY(-3px);
-            box-shadow: 0 15px 45px rgba(37, 211, 102, 0.7);
+            box-shadow: 0 8px 25px rgba(37, 211, 102, 0.4);
         }
         .btn-whats:disabled {
             background: #2A3A3A;
-            cursor: not-allowed;
             opacity: 0.5;
+            cursor: not-allowed;
             box-shadow: none;
         }
-        .btn-whats svg { width: 22px; height: 22px; }
-
-        @media (max-width: 768px) {
-            .shop-img { height: 240px; }
-            .cart-floating { bottom: 16px; right: 16px; padding: 12px 16px; }
-            .cart-floating .cart-total { font-size: 0.8rem; }
-            .cart-modal-header { padding: 18px; }
-            .cart-modal-body { padding: 16px 18px 20px; }
-            .cart-item { grid-template-columns: 50px 1fr auto; gap: 10px; }
-            .cart-item img { width: 50px; height: 50px; }
-        }
+        .btn-whats svg { width: 20px; height: 20px; }
     </style>
 </head>
 <body>
 
-<div class="signature">THIAGO</div>
-
-<header>
-    <a href="index.html" class="logo-nav">
-        <img src="img/351028003_261521669880100_2084842963756590402_n.jpg" alt="Elite Combat">
+<!-- HEADER MOBILE -->
+<header class="header">
+    <a href="index.html" class="header-logo">
+        <img src="../img/351028003_261521669880100_2084842963756590402_n.jpg" alt="Elite Combat">
         <div class="logo-text">
             <span class="main">ELITE COMBAT</span>
             <span class="sub">Muay Thai</span>
         </div>
     </a>
-    <nav>
-        <ul>
-            <li><a href="index2.html"><button class="btn-athlete" type="button"><span>Atleta</span></button></a></li>
-            <li><a href="index.html">Home</a></li>
-            <li><a href="aulas.html">Aulas</a></li>
-            <li><a href="equipamentos.html" class="active">Equipamentos</a></li>
-            <li><a href="contato.html">Contato</a></li>
-        </ul>
-    </nav>
-    <div class="menu-toggle"><span></span><span></span><span></span></div>
+    <button class="menu-btn" id="menuBtn" aria-label="Menu">
+        <span></span><span></span><span></span>
+    </button>
 </header>
 
-<section style="padding-top: 150px;">
-    <div class="section-header reveal">
+<!-- MENU DRAWER -->
+<div class="overlay" id="overlay"></div>
+<nav class="nav-drawer" id="navDrawer">
+    <a href="index.html">Home</a>
+    <a href="aulas.html">Aulas</a>
+    <a href="equipamentos.html" class="active">Equipamentos</a>
+    <a href="contato.html">Contato</a>
+    <a href="inscricao.html" class="btn-athlete-mobile">Quero me Inscrever</a>
+    <a href="/api/preferencia?versao=desktop" style="margin-top: 12px; font-size: 0.75rem; color: var(--blue-ice); text-align: center; border: none;">🖥️ Versão Desktop</a>
+</nav>
+
+<!-- CONTEÚDO -->
+<section class="section">
+    <div class="section-header">
         <h2 class="section-title">Loja <span>Elite</span></h2>
         <div class="section-number">03</div>
     </div>
 
-    <p class="reveal" style="text-align: center; color: var(--gray-light); margin-bottom: 40px; max-width: 700px; margin-left: auto; margin-right: auto;">
-        Escolha seus equipamentos, selecione o tamanho e finalize seu pedido direto pelo WhatsApp.
-    </p>
-
-    <div class="shop-filters reveal">
+    <div class="shop-filters">
         <button class="filtro active" data-filtro="todos">Todos</button>
         <button class="filtro" data-filtro="camisa">Camisas</button>
         <button class="filtro" data-filtro="short">Shorts</button>
@@ -487,10 +452,11 @@
     <div class="shop-grid" id="shopGrid"></div>
 </section>
 
-<footer>
+<!-- FOOTER -->
+<footer class="footer">
     <div class="footer-grid">
         <div class="footer-col">
-            <h4>ELITE COMBAT</h4>
+            <h4>Elite Combat</h4>
             <p>Muay Thai de alto rendimento em Bom Jardim - MA.</p>
         </div>
         <div class="footer-col">
@@ -501,9 +467,9 @@
         </div>
         <div class="footer-col">
             <h4>Social</h4>
-            <a href="https://www.instagram.com/elitecombat_/" target="_blank">Instagram Academia</a>
-            <a href="https://www.instagram.com/saymon_danilo/" target="_blank">Instagram Mestre</a>
-            <a href="https://www.instagram.com/arkhamsystem.cod/" target="_blank">Criador do Site</a>
+            <a href="https://www.instagram.com/elitecombat_/" target="_blank" rel="noopener">Instagram Academia</a>
+            <a href="https://www.instagram.com/saymon_danilo/" target="_blank" rel="noopener">Instagram Mestre</a>
+            <a href="https://www.instagram.com/arkhamsystems.cod/" target="_blank" rel="noopener">Criador do Site</a>
         </div>
     </div>
     <div class="footer-bottom">
@@ -562,7 +528,8 @@
     </div>
 </div>
 
-<script src="js/loja.js"></script>
-<script src="js/main.js"></script>
+<!-- SCRIPTS: loja compartilhada + mobile -->
+<script src="../js/loja.js"></script>
+<script src="js/mobile.js"></script>
 </body>
 </html>
