@@ -304,6 +304,81 @@ app.get('/api/contrato/:numero', (req, res) => {
   res.download(row.contrato_path, `contrato_${numero}.txt`);
 });
 
+// ---- Rota: consultar inscrição pelo app autenticado ----
+app.get('/api/integracao/inscricao', (req, res) => {
+  const expectedToken = process.env.REGISTRATION_API_TOKEN || '';
+  const providedToken = String(req.get('authorization') || '').replace(/^Bearer\s+/i, '');
+  const expectedBuffer = Buffer.from(expectedToken);
+  const providedBuffer = Buffer.from(providedToken);
+
+  if (!expectedToken) {
+    return res.status(503).json({ ok: false, erro: 'Integração não configurada.' });
+  }
+  if (
+    expectedBuffer.length !== providedBuffer.length ||
+    !crypto.timingSafeEqual(expectedBuffer, providedBuffer)
+  ) {
+    return res.status(401).json({ ok: false, erro: 'Não autorizado.' });
+  }
+
+  const numero = String(req.query.numero || '');
+  const telefone = String(req.query.telefone || '').replace(/\D/g, '');
+  if (!/^\d{11}$/.test(numero) || (telefone && !/^\d{10,13}$/.test(telefone))) {
+    return res.status(400).json({ ok: false, erro: 'Número de cadastro ou telefone inválido.' });
+  }
+
+  const normalizarTelefone = (valor) => {
+    const digits = String(valor || '').replace(/\D/g, '');
+    return digits.startsWith('55') && digits.length === 13 ? digits.slice(2) : digits;
+  };
+  const row = db
+    .prepare('SELECT * FROM inscricoes WHERE numero_cadastro = ?')
+    .get(numero);
+
+  if (!row || (telefone && normalizarTelefone(row.telefone) !== normalizarTelefone(telefone))) {
+    return res.status(404).json({ ok: false, erro: 'Inscrição não encontrada.' });
+  }
+
+  let saude;
+  try {
+    saude = row.saude_json ? JSON.parse(row.saude_json) : {};
+  } catch (err) {
+    console.error('Erro ao ler dados de saúde da inscrição:', err);
+    return res.status(500).json({ ok: false, erro: 'Não foi possível ler a ficha de inscrição.' });
+  }
+
+  return res.json({
+    ok: true,
+    inscricao: {
+      numero_cadastro: row.numero_cadastro,
+      data_preenchimento: row.data_preenchimento,
+      responsavel_atendimento: row.responsavel_atendimento,
+      nome: row.nome,
+      data_nascimento: row.data_nascimento,
+      idade: row.idade,
+      telefone: row.telefone,
+      turma: row.turma,
+      periodo: row.periodo,
+      horario: row.horario,
+      ja_muaythai: row.ja_muaythai,
+      ja_outra_arte: row.ja_outra_arte,
+      modalidade: row.modalidade,
+      tempo_pratica: row.tempo_pratica,
+      objetivo: row.objetivo,
+      resp_nome: row.resp_nome,
+      resp_parentesco: row.resp_parentesco,
+      resp_telefone: row.resp_telefone,
+      emerg_nome: row.emerg_nome,
+      emerg_parentesco: row.emerg_parentesco,
+      emerg_telefone: row.emerg_telefone,
+      saude,
+      adaptacoes: row.adaptacoes,
+      autorizou_dados: row.autorizou_dados,
+      contrato_disponivel: !!(row.contrato_path && fs.existsSync(row.contrato_path)),
+    },
+  });
+});
+
 function gerarContrato(d) {
   const linhas = [];
   linhas.push('================================================================');
