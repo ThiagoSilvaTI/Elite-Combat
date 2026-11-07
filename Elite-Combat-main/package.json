@@ -1,0 +1,13 @@
+{
+  "name": "elite-combat",
+  "version": "1.0.0",
+  "description": "Site oficial da Elite Combat Muay Thai",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "express": "^4.18.2",
+    "better-sqlite3": "^11.3.0"
+  }
+}

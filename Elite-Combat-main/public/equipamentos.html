@@ -1,0 +1,568 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Equipamentos | Elite Combat</title>
+    <link rel="stylesheet" href="css/style.css">
+    <script>
+    (function () {
+      var pref = document.cookie.match(/(?:^|;\s*)preferencia_versao=([^;]+)/);
+      if (pref) return;
+      var isMobile =
+        /Android|webOS|iPhone|iPad|iPod|BlackBerry|Windows Phone|Opera Mini|IEMobile|Mobile/i.test(navigator.userAgent) ||
+        (navigator.maxTouchPoints > 1 && /Macintosh/i.test(navigator.userAgent));
+      if (isMobile) {
+        var path = window.location.pathname;
+        if (path.indexOf('/mobile/') === -1) {
+          var arquivo = path.split('/').pop() || 'index.html';
+          window.location.replace('/mobile/' + arquivo + window.location.search);
+        }
+      }
+    })();
+    </script>
+    <style>
+        /* ===== LOJA ===== */
+        .shop-filters {
+            display: flex;
+            gap: 12px;
+            flex-wrap: wrap;
+            margin-bottom: 40px;
+            justify-content: center;
+        }
+        .shop-filters button {
+            padding: 12px 26px;
+            background: transparent;
+            border: 2px solid var(--blue-core, #0033A0);
+            color: var(--white, #fff);
+            font-family: var(--font-display, 'Anton', sans-serif);
+            font-size: 0.9rem;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            cursor: pointer;
+            transition: 0.3s;
+        }
+        .shop-filters button.active,
+        .shop-filters button:hover {
+            background: var(--blue-core, #0033A0);
+            border-color: var(--blue-glow, #0066FF);
+            box-shadow: 0 0 25px rgba(0, 102, 255, 0.5);
+        }
+
+        .shop-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 28px;
+            margin-bottom: 60px;
+        }
+        .shop-card {
+            background: var(--deep-sea, #030A18);
+            border: 1px solid rgba(0, 51, 160, 0.3);
+            transition: 0.4s;
+            position: relative;
+            overflow: hidden;
+        }
+        .shop-card:hover {
+            border-color: var(--blue-glow, #0066FF);
+            transform: translateY(-6px);
+            box-shadow: 0 25px 50px rgba(0, 51, 160, 0.4);
+        }
+        .shop-card.selected {
+            border-color: var(--blue-glow, #0066FF);
+            box-shadow: 0 0 0 3px rgba(0, 102, 255, 0.5);
+        }
+        .shop-card.selected::after {
+            content: '✓ SELECIONADO';
+            position: absolute;
+            top: 12px;
+            right: 12px;
+            background: var(--blue-glow, #0066FF);
+            color: #fff;
+            font-size: 0.65rem;
+            font-weight: 800;
+            letter-spacing: 2px;
+            padding: 6px 12px;
+            z-index: 5;
+        }
+        .shop-img {
+            width: 100%;
+            height: 280px;
+            overflow: hidden;
+            background: #000;
+        }
+        .shop-img img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            transition: 0.6s;
+        }
+        .shop-card:hover .shop-img img { transform: scale(1.08); }
+        .shop-info {
+            padding: 20px;
+            text-align: center;
+            border-top: 1px solid rgba(0, 51, 160, 0.25);
+        }
+        .shop-info .categoria {
+            font-size: 0.7rem;
+            color: var(--gray-light, #9CA8BC);
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            margin-bottom: 4px;
+        }
+        .shop-info h3 {
+            font-family: var(--font-display, 'Anton', sans-serif);
+            font-size: 1.2rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 6px;
+        }
+        .shop-info .preco {
+            color: var(--blue-glow, #0066FF);
+            font-family: var(--font-display, 'Anton', sans-serif);
+            font-size: 1.4rem;
+            letter-spacing: 1px;
+            margin-bottom: 14px;
+        }
+        .tamanhos {
+            display: flex;
+            gap: 6px;
+            justify-content: center;
+            flex-wrap: wrap;
+            margin-bottom: 14px;
+        }
+        .tamanhos button {
+            width: 42px;
+            height: 42px;
+            background: transparent;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            color: var(--white, #fff);
+            font-family: inherit;
+            font-weight: 700;
+            font-size: 0.8rem;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+        .tamanhos button:hover { border-color: var(--blue-glow, #0066FF); }
+        .tamanhos button.selected {
+            background: var(--blue-glow, #0066FF);
+            border-color: var(--blue-glow, #0066FF);
+        }
+        .btn-add {
+            width: 100%;
+            padding: 14px;
+            background: var(--blue-core, #0033A0);
+            color: var(--white, #fff);
+            border: none;
+            font-family: var(--font-display, 'Anton', sans-serif);
+            font-size: 0.9rem;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            cursor: pointer;
+            transition: 0.3s;
+        }
+        .btn-add:hover {
+            background: var(--blue-glow, #0066FF);
+            box-shadow: 0 10px 30px rgba(0, 102, 255, 0.6);
+        }
+        .btn-add:disabled {
+            background: #1A2535;
+            cursor: not-allowed;
+            opacity: 0.6;
+        }
+
+        /* ===== CARRINHO FLUTUANTE ===== */
+        .cart-floating {
+            position: fixed;
+            bottom: 24px;
+            right: 24px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 14px 20px;
+            background: linear-gradient(135deg, #0033A0, #0066FF);
+            color: #fff;
+            border: 2px solid #0066FF;
+            border-radius: 50px;
+            cursor: pointer;
+            box-shadow: 0 10px 40px rgba(0, 102, 255, 0.5);
+            z-index: 1500;
+            font-family: var(--font-display, 'Anton', sans-serif);
+            letter-spacing: 1px;
+            opacity: 0;
+            transform: translateY(20px);
+            pointer-events: none;
+            transition: opacity 0.3s, transform 0.3s;
+        }
+        .cart-floating.visible {
+            opacity: 1;
+            transform: translateY(0);
+            pointer-events: auto;
+        }
+        .cart-floating svg { width: 22px; height: 22px; flex-shrink: 0; }
+        .cart-floating .cart-count {
+            background: #FFC800;
+            color: #000;
+            font-size: 0.75rem;
+            font-weight: 900;
+            min-width: 22px;
+            height: 22px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 0 6px;
+        }
+        .cart-floating .cart-total { font-size: 0.9rem; color: #fff; }
+        .cart-floating:hover { box-shadow: 0 15px 60px rgba(0, 102, 255, 0.9); transform: translateY(-3px); }
+        .cart-floating.pulse { animation: cartPulse 0.4s ease-out; }
+        @keyframes cartPulse {
+            0%,100% { transform: scale(1); }
+            50%     { transform: scale(1.15); }
+        }
+
+        /* ===== MODAL CARRINHO ===== */
+        .cart-modal-bg {
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.85);
+            backdrop-filter: blur(6px);
+            z-index: 2000;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+        .cart-modal-bg.active { display: flex; opacity: 1; }
+        .cart-modal {
+            background: #030A18;
+            border: 1px solid #0066FF;
+            border-radius: 12px;
+            max-width: 600px;
+            width: 100%;
+            max-height: 90vh;
+            overflow-y: auto;
+            animation: modalIn 0.3s ease-out;
+        }
+        @keyframes modalIn {
+            from { transform: scale(0.9); opacity: 0; }
+            to   { transform: scale(1); opacity: 1; }
+        }
+        .cart-modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 22px 24px;
+            border-bottom: 1px solid rgba(0, 102, 255, 0.3);
+            position: sticky;
+            top: 0;
+            background: #030A18;
+            z-index: 10;
+        }
+        .cart-modal-header h2 {
+            font-family: var(--font-display, 'Anton', sans-serif);
+            font-size: 1.4rem;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            color: #fff;
+            margin: 0;
+        }
+        .cart-modal-close {
+            background: transparent;
+            border: none;
+            color: #fff;
+            font-size: 1.4rem;
+            cursor: pointer;
+            width: 36px;
+            height: 36px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 50%;
+            transition: 0.2s;
+        }
+        .cart-modal-close:hover { background: rgba(255, 26, 64, 0.2); color: #FF4D6D; }
+        .cart-modal-body { padding: 20px 24px 24px; }
+        .cart-modal-lista { max-height: 280px; overflow-y: auto; margin-bottom: 16px; }
+        .cart-item {
+            display: grid;
+            grid-template-columns: 60px 1fr auto;
+            gap: 12px;
+            align-items: center;
+            padding: 12px 0;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+        }
+        .cart-item img {
+            width: 60px;
+            height: 60px;
+            object-fit: cover;
+            border-radius: 6px;
+        }
+        .cart-item-info strong {
+            display: block;
+            font-size: 0.85rem;
+            color: #fff;
+            margin-bottom: 2px;
+        }
+        .cart-item-info small {
+            display: block;
+            font-size: 0.7rem;
+            color: #9CA8BC;
+            margin-bottom: 6px;
+        }
+        .cart-item-qtd { display: flex; align-items: center; gap: 6px; }
+        .cart-item-qtd button {
+            width: 26px;
+            height: 26px;
+            background: transparent;
+            border: 1px solid #0066FF;
+            color: #fff;
+            font-size: 0.9rem;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        .cart-item-qtd button:active { background: #0066FF; }
+        .cart-item-qtd span { min-width: 20px; text-align: center; font-weight: 700; font-size: 0.85rem; }
+        .cart-item-qtd .cart-remover {
+            border-color: #FF4D6D;
+            color: #FF4D6D;
+            margin-left: auto;
+        }
+        .cart-item-qtd .cart-remover:active { background: #FF4D6D; color: #fff; }
+        .cart-item-sub {
+            font-weight: 700;
+            color: #0066FF;
+            font-size: 0.9rem;
+            text-align: right;
+        }
+        .cart-empty {
+            text-align: center;
+            padding: 40px 20px;
+            color: #9CA8BC;
+            font-size: 0.9rem;
+        }
+        .cart-modal-total {
+            display: flex;
+            justify-content: space-between;
+            align-items: baseline;
+            padding: 16px 0;
+            border-top: 2px solid #0066FF;
+            margin-bottom: 16px;
+        }
+        .cart-modal-total span {
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            font-size: 0.8rem;
+            color: #9CA8BC;
+        }
+        .cart-modal-total strong {
+            font-family: var(--font-display, 'Anton', sans-serif);
+            font-size: 1.6rem;
+            color: #0066FF;
+        }
+        .cart-modal-form {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            margin-bottom: 16px;
+        }
+        .cart-modal-form label {
+            display: block;
+            font-size: 0.68rem;
+            letter-spacing: 1.5px;
+            text-transform: uppercase;
+            color: #9CA8BC;
+            margin-bottom: 5px;
+            font-weight: 700;
+        }
+        .cart-modal-form input,
+        .cart-modal-form textarea {
+            width: 100%;
+            padding: 12px 14px;
+            background: rgba(0, 0, 0, 0.4);
+            border: 1px solid rgba(0, 102, 255, 0.3);
+            color: #fff;
+            font-family: inherit;
+            font-size: 16px;
+            border-radius: 6px;
+        }
+        .cart-modal-form textarea { min-height: 60px; resize: vertical; }
+
+        /* Aviso form */
+        .aviso-form {
+            background: rgba(255, 200, 0, 0.1);
+            border-left: 3px solid #FFC800;
+            padding: 12px 15px;
+            color: #FFC800;
+            font-size: 0.85rem;
+            margin-bottom: 20px;
+            display: none;
+        }
+        .aviso-form.active { display: block; }
+
+        /* Botão WhatsApp */
+        .btn-whats {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 12px;
+            width: 100%;
+            padding: 18px;
+            background: linear-gradient(135deg, #25D366, #128C7E);
+            color: #fff;
+            border: none;
+            border-radius: 6px;
+            font-family: var(--font-display, 'Anton', sans-serif);
+            font-size: 1rem;
+            letter-spacing: 2.5px;
+            text-transform: uppercase;
+            cursor: pointer;
+            transition: 0.3s;
+            box-shadow: 0 10px 35px rgba(37, 211, 102, 0.4);
+        }
+        .btn-whats:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 15px 45px rgba(37, 211, 102, 0.7);
+        }
+        .btn-whats:disabled {
+            background: #2A3A3A;
+            cursor: not-allowed;
+            opacity: 0.5;
+            box-shadow: none;
+        }
+        .btn-whats svg { width: 22px; height: 22px; }
+
+        @media (max-width: 768px) {
+            .shop-img { height: 240px; }
+            .cart-floating { bottom: 16px; right: 16px; padding: 12px 16px; }
+            .cart-floating .cart-total { font-size: 0.8rem; }
+            .cart-modal-header { padding: 18px; }
+            .cart-modal-body { padding: 16px 18px 20px; }
+            .cart-item { grid-template-columns: 50px 1fr auto; gap: 10px; }
+            .cart-item img { width: 50px; height: 50px; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="signature">THIAGO</div>
+
+<header>
+    <a href="index.html" class="logo-nav">
+        <img src="img/351028003_261521669880100_2084842963756590402_n.jpg" alt="Elite Combat">
+        <div class="logo-text">
+            <span class="main">ELITE COMBAT</span>
+            <span class="sub">Muay Thai</span>
+        </div>
+    </a>
+    <nav>
+        <ul>
+            <li><a href="index2.html"><button class="btn-athlete" type="button"><span>Atleta</span></button></a></li>
+            <li><a href="index.html">Home</a></li>
+            <li><a href="aulas.html">Aulas</a></li>
+            <li><a href="equipamentos.html" class="active">Equipamentos</a></li>
+            <li><a href="contato.html">Contato</a></li>
+        </ul>
+    </nav>
+    <div class="menu-toggle"><span></span><span></span><span></span></div>
+</header>
+
+<section style="padding-top: 150px;">
+    <div class="section-header reveal">
+        <h2 class="section-title">Loja <span>Elite</span></h2>
+        <div class="section-number">03</div>
+    </div>
+
+    <p class="reveal" style="text-align: center; color: var(--gray-light); margin-bottom: 40px; max-width: 700px; margin-left: auto; margin-right: auto;">
+        Escolha seus equipamentos, selecione o tamanho e finalize seu pedido direto pelo WhatsApp.
+    </p>
+
+    <div class="shop-filters reveal">
+        <button class="filtro active" data-filtro="todos">Todos</button>
+        <button class="filtro" data-filtro="camisa">Camisas</button>
+        <button class="filtro" data-filtro="short">Shorts</button>
+    </div>
+
+    <div class="shop-grid" id="shopGrid"></div>
+</section>
+
+<footer>
+    <div class="footer-grid">
+        <div class="footer-col">
+            <h4>ELITE COMBAT</h4>
+            <p>Muay Thai de alto rendimento em Bom Jardim - MA.</p>
+        </div>
+        <div class="footer-col">
+            <h4>Links</h4>
+            <a href="aulas.html">Aulas</a>
+            <a href="equipamentos.html">Equipamentos</a>
+            <a href="contato.html">Contato</a>
+        </div>
+        <div class="footer-col">
+            <h4>Social</h4>
+            <a href="https://www.instagram.com/elitecombat_/" target="_blank">Instagram Academia</a>
+            <a href="https://www.instagram.com/saymon_danilo/" target="_blank">Instagram Mestre</a>
+            <a href="https://www.instagram.com/arkhamsystem.cod/" target="_blank">Criador do Site</a>
+        </div>
+    </div>
+    <div class="footer-bottom">
+        <p>&copy; 2023 Elite Combat. Todos os direitos reservados.</p>
+    </div>
+</footer>
+
+<!-- CARRINHO FLUTUANTE -->
+<button class="cart-floating" id="cartFloatingBtn" aria-label="Abrir carrinho">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <circle cx="9" cy="21" r="1"></circle>
+        <circle cx="20" cy="21" r="1"></circle>
+        <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"></path>
+    </svg>
+    <span class="cart-count">0</span>
+    <span class="cart-total">R$ 0,00</span>
+</button>
+
+<!-- MODAL CARRINHO -->
+<div class="cart-modal-bg" id="cartModalBg">
+    <div class="cart-modal">
+        <div class="cart-modal-header">
+            <h2>Seu Pedido</h2>
+            <button class="cart-modal-close" id="btnFecharCart" aria-label="Fechar">✕</button>
+        </div>
+        <div class="cart-modal-body">
+            <div class="cart-modal-lista" id="cartModalLista">
+                <div class="cart-empty">Seu carrinho está vazio.</div>
+            </div>
+            <div class="cart-modal-total">
+                <span>Total</span>
+                <strong id="cartModalTotal">R$ 0,00</strong>
+            </div>
+            <div class="aviso-form" id="avisoForm"></div>
+            <div class="cart-modal-form">
+                <div>
+                    <label>Nome completo *</label>
+                    <input type="text" id="clienteNome" placeholder="Seu nome">
+                </div>
+                <div>
+                    <label>Telefone / WhatsApp *</label>
+                    <input type="tel" id="clienteTelefone" placeholder="(99) 99999-9999">
+                </div>
+                <div>
+                    <label>Observações (opcional)</label>
+                    <textarea id="clienteObs" placeholder="Ex.: Prefiro retirar na academia..."></textarea>
+                </div>
+            </div>
+            <button class="btn-whats" id="btnWhats" disabled>
+                <svg viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/>
+                </svg>
+                Enviar Pedido pelo WhatsApp
+            </button>
+        </div>
+    </div>
+</div>
+
+<script src="js/loja.js"></script>
+<script src="js/main.js"></script>
+</body>
+</html>

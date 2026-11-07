@@ -1,0 +1,448 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin | Elite Combat</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: #000205;
+            color: #fff;
+            min-height: 100vh;
+            padding: 20px;
+        }
+        h1 {
+            font-family: 'Anton', sans-serif;
+            letter-spacing: 3px;
+            text-transform: uppercase;
+            margin-bottom: 8px;
+            font-size: 2rem;
+        }
+        h1 span { color: #0066FF; }
+        .sub {
+            color: #9CA8BC;
+            font-size: 0.85rem;
+            margin-bottom: 30px;
+        }
+        .toolbar {
+            display: flex;
+            gap: 12px;
+            flex-wrap: wrap;
+            margin-bottom: 24px;
+            padding: 20px;
+            background: #030A18;
+            border: 1px solid rgba(0, 102, 255, 0.25);
+            border-radius: 8px;
+        }
+        button, .btn {
+            padding: 12px 20px;
+            border: none;
+            border-radius: 6px;
+            font-family: inherit;
+            font-size: 0.85rem;
+            font-weight: 700;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+            cursor: pointer;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            transition: transform 0.15s, opacity 0.15s;
+        }
+        button:active, .btn:active { transform: scale(0.97); }
+        .btn-primary { background: #0066FF; color: #fff; }
+        .btn-success { background: #10B981; color: #fff; }
+        .btn-warning { background: #F59E0B; color: #000; }
+        .btn-danger  { background: #EF4444; color: #fff; }
+        .btn-ghost   { background: transparent; border: 1px solid #0066FF; color: #0066FF; }
+
+        #busca {
+            flex: 1;
+            min-width: 200px;
+            padding: 12px 16px;
+            background: rgba(0, 0, 0, 0.4);
+            border: 1px solid rgba(0, 102, 255, 0.3);
+            border-radius: 6px;
+            color: #fff;
+            font-size: 16px;
+            font-family: inherit;
+        }
+        #busca:focus { outline: none; border-color: #0066FF; }
+
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 12px;
+            margin-bottom: 24px;
+        }
+        .stat {
+            background: #030A18;
+            border: 1px solid rgba(0, 102, 255, 0.25);
+            border-radius: 8px;
+            padding: 16px;
+            text-align: center;
+        }
+        .stat .val { font-size: 1.8rem; font-weight: 800; color: #0066FF; }
+        .stat .lbl { font-size: 0.7rem; color: #9CA8BC; text-transform: uppercase; letter-spacing: 1.5px; margin-top: 4px; }
+
+        .tabela-wrap {
+            background: #030A18;
+            border: 1px solid rgba(0, 102, 255, 0.25);
+            border-radius: 8px;
+            overflow-x: auto;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.85rem;
+        }
+        thead {
+            background: rgba(0, 102, 255, 0.1);
+            position: sticky;
+            top: 0;
+        }
+        th {
+            text-align: left;
+            padding: 14px 12px;
+            font-size: 0.7rem;
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+            color: #0066FF;
+            white-space: nowrap;
+            border-bottom: 1px solid rgba(0, 102, 255, 0.3);
+        }
+        td {
+            padding: 12px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+            vertical-align: top;
+        }
+        tr:hover { background: rgba(0, 102, 255, 0.05); }
+        .num-cad { font-family: monospace; font-weight: 700; color: #FFC800; }
+        .acoes { display: flex; gap: 6px; flex-wrap: wrap; }
+        .acoes button { padding: 6px 10px; font-size: 0.7rem; }
+
+        .vazio {
+            text-align: center;
+            padding: 60px 20px;
+            color: #9CA8BC;
+        }
+        .vazio h3 { font-family: 'Anton', sans-serif; font-size: 1.4rem; margin-bottom: 8px; color: #fff; letter-spacing: 2px; }
+
+        .modal-bg {
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.85);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 999;
+            padding: 20px;
+        }
+        .modal-bg.active { display: flex; }
+        .modal {
+            background: #030A18;
+            border: 1px solid #0066FF;
+            border-radius: 8px;
+            padding: 30px;
+            max-width: 700px;
+            width: 100%;
+            max-height: 85vh;
+            overflow-y: auto;
+        }
+        .modal h2 {
+            font-family: 'Anton', sans-serif;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            color: #0066FF;
+            margin-bottom: 20px;
+        }
+        .modal .linha { padding: 8px 0; border-bottom: 1px solid rgba(255, 255, 255, 0.06); }
+        .modal .linha:last-child { border-bottom: none; }
+        .modal .lbl { font-size: 0.7rem; text-transform: uppercase; letter-spacing: 1.5px; color: #9CA8BC; margin-bottom: 2px; }
+        .modal .val { color: #fff; font-size: 0.9rem; }
+        .modal .fechar { margin-top: 20px; }
+
+        .loading { text-align: center; padding: 40px; color: #9CA8BC; }
+        .aviso {
+            background: rgba(255, 200, 0, 0.1);
+            border-left: 3px solid #FFC800;
+            padding: 14px;
+            border-radius: 6px;
+            margin-bottom: 20px;
+            font-size: 0.85rem;
+            color: #FFC800;
+        }
+
+        @media (max-width: 640px) {
+            body { padding: 12px; }
+            h1 { font-size: 1.5rem; }
+            .toolbar { padding: 14px; }
+            th, td { padding: 8px 6px; font-size: 0.75rem; }
+            .acoes { flex-direction: column; }
+        }
+    </style>
+</head>
+<body>
+
+<h1>Admin <span>Elite Combat</span></h1>
+<p class="sub">Banco de dados de inscrições — logado como <strong>MuayThai</strong></p>
+
+<div class="aviso">
+    ⚠️ <strong>Atenção:</strong> o Render apaga o banco a cada deploy. Use <strong>Exportar Backup</strong> antes de cada atualização e <strong>Importar Backup</strong> depois, para não perder os dados.
+</div>
+
+<div class="toolbar">
+    <input type="text" id="busca" placeholder="🔍 Buscar por nome, número, telefone...">
+    <button class="btn-primary" id="btnAtualizar">🔄 Atualizar</button>
+    <a href="/api/admin/exportar" class="btn btn-success" download>💾 Exportar Backup</a>
+    <label class="btn btn-warning" for="fileImport" style="cursor:pointer;">📥 Importar Backup</label>
+    <input type="file" id="fileImport" accept=".json" style="display:none;">
+</div>
+
+<div class="stats" id="stats"></div>
+
+<div id="conteudo">
+    <div class="loading">Carregando inscrições...</div>
+</div>
+
+<!-- Modal detalhes -->
+<div class="modal-bg" id="modalBg">
+    <div class="modal">
+        <h2 id="modalTitulo">Detalhes</h2>
+        <div id="modalConteudo"></div>
+        <button class="btn-danger fechar" id="btnFecharModal">Fechar</button>
+    </div>
+</div>
+
+<script>
+    const API = {
+        listar: '/api/admin/inscricoes',
+        remover: (n) => `/api/admin/inscricao/${n}`,
+        importar: '/api/admin/importar',
+        contrato: (n) => `/api/contrato/${n}`,
+    };
+
+    let todasInscricoes = [];
+
+    // ==================== CARREGAR ====================
+    async function carregar() {
+        document.getElementById('conteudo').innerHTML = '<div class="loading">Carregando...</div>';
+        try {
+            const r = await fetch(API.listar);
+            if (!r.ok) throw new Error('HTTP ' + r.status);
+            const data = await r.json();
+            todasInscricoes = data.inscricoes || [];
+            renderizarStats();
+            renderizarTabela(todasInscricoes);
+        } catch (err) {
+            console.error(err);
+            document.getElementById('conteudo').innerHTML =
+                '<div class="vazio"><h3>Erro</h3><p>Não foi possível carregar as inscrições.</p></div>';
+        }
+    }
+
+    function renderizarStats() {
+        const total = todasInscricoes.length;
+        const hoje = new Date().toLocaleDateString('pt-BR');
+        const hojeCount = todasInscricoes.filter(i =>
+            (i.data_preenchimento || '').startsWith(hoje)
+        ).length;
+        const menores = todasInscricoes.filter(i => i.idade < 18).length;
+
+        document.getElementById('stats').innerHTML = `
+            <div class="stat"><div class="val">${total}</div><div class="lbl">Total</div></div>
+            <div class="stat"><div class="val">${hojeCount}</div><div class="lbl">Hoje</div></div>
+            <div class="stat"><div class="val">${menores}</div><div class="lbl">Menores 18</div></div>
+        `;
+    }
+
+    function renderizarTabela(lista) {
+        const wrap = document.getElementById('conteudo');
+
+        if (!lista.length) {
+            wrap.innerHTML = `
+                <div class="vazio">
+                    <h3>Nenhuma inscrição</h3>
+                    <p>As inscrições aparecerão aqui quando alguém preencher o formulário.</p>
+                </div>`;
+            return;
+        }
+
+        const linhas = lista.map(i => `
+            <tr>
+                <td class="num-cad">${i.numero_cadastro}</td>
+                <td>${escape(i.nome)}</td>
+                <td>${i.idade} anos</td>
+                <td>${escape(i.telefone)}</td>
+                <td>${escape(i.turma)}</td>
+                <td>${escape(i.data_preenchimento)}</td>
+                <td>
+                    <div class="acoes">
+                        <button class="btn-primary" onclick="verDetalhes('${i.numero_cadastro}')">👁 Ver</button>
+                        ${i.tem_contrato
+                            ? `<a href="${API.contrato(i.numero_cadastro)}" class="btn btn-ghost" style="padding:6px 10px;font-size:0.7rem;">📄</a>`
+                            : ''}
+                        <button class="btn-danger" onclick="remover('${i.numero_cadastro}')">🗑</button>
+                    </div>
+                </td>
+            </tr>
+        `).join('');
+
+        wrap.innerHTML = `
+            <div class="tabela-wrap">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Nº Cadastro</th>
+                            <th>Nome</th>
+                            <th>Idade</th>
+                            <th>Telefone</th>
+                            <th>Turma</th>
+                            <th>Data</th>
+                            <th>Ações</th>
+                        </tr>
+                    </thead>
+                    <tbody>${linhas}</tbody>
+                </table>
+            </div>
+        `;
+    }
+
+    function escape(s) {
+        return String(s || '').replace(/[&<>"']/g, c =>
+            ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]
+        );
+    }
+
+    // ==================== DETALHES ====================
+    window.verDetalhes = function (numero) {
+        const i = todasInscricoes.find(x => x.numero_cadastro === numero);
+        if (!i) return;
+
+        const saudeMap = {
+            q1: 'Condição médica',
+            q2: 'Condição psicológica',
+            q3: 'Deficiência / limitação',
+            q4: 'Lesão / cirurgia',
+            q5: 'Medicamento contínuo',
+            q6: 'Alergia',
+            q7: 'Desmaio / dor no peito',
+            q8: 'Orientação médica restritiva',
+        };
+
+        const saudeSim = Object.keys(saudeMap)
+            .filter(k => i.saude && i.saude[k] === 'sim')
+            .map(k => `<div class="linha"><div class="lbl">${saudeMap[k]}</div><div class="val">${escape(i.saude[k + '_detalhe'] || 'Sim')}</div></div>`)
+            .join('');
+
+        document.getElementById('modalTitulo').textContent = 'Inscrição ' + numero;
+        document.getElementById('modalConteudo').innerHTML = `
+            <div class="linha"><div class="lbl">Nome</div><div class="val">${escape(i.nome)}</div></div>
+            <div class="linha"><div class="lbl">Idade / Telefone</div><div class="val">${i.idade} anos · ${escape(i.telefone)}</div></div>
+            <div class="linha"><div class="lbl">Turma</div><div class="val">${escape(i.turma)} ${i.periodo ? '· ' + escape(i.periodo) : ''} ${i.horario ? '· ' + escape(i.horario) : ''}</div></div>
+            <div class="linha"><div class="lbl">Objetivo</div><div class="val">${escape(i.objetivo || '—')}</div></div>
+            ${i.resp_nome ? `<div class="linha"><div class="lbl">Responsável</div><div class="val">${escape(i.resp_nome)} · ${escape(i.resp_telefone || '')}</div></div>` : ''}
+            <div class="linha"><div class="lbl">Emergência</div><div class="val">${escape(i.emerg_nome)} · ${escape(i.emerg_telefone)}</div></div>
+            <div class="linha"><div class="lbl">Saúde (Sim)</div><div class="val">${saudeSim || 'Nenhuma condição informada'}</div></div>
+            ${i.adaptacoes ? `<div class="linha"><div class="lbl">Adaptações</div><div class="val">${escape(i.adaptacoes)}</div></div>` : ''}
+            <div class="linha"><div class="lbl">Criado em</div><div class="val">${escape(i.criado_em || i.data_preenchimento)}</div></div>
+        `;
+        document.getElementById('modalBg').classList.add('active');
+    };
+
+    document.getElementById('btnFecharModal').addEventListener('click', () => {
+        document.getElementById('modalBg').classList.remove('active');
+    });
+    document.getElementById('modalBg').addEventListener('click', (e) => {
+        if (e.target.id === 'modalBg') {
+            document.getElementById('modalBg').classList.remove('active');
+        }
+    });
+
+    // ==================== REMOVER ====================
+    window.remover = async function (numero) {
+        if (!confirm(`Remover inscrição ${numero}?`)) return;
+        try {
+            const r = await fetch(API.remover(numero), { method: 'DELETE' });
+            const data = await r.json();
+            if (data.ok) {
+                alert('Removido com sucesso.');
+                carregar();
+            } else {
+                alert('Erro: ' + (data.erro || 'desconhecido'));
+            }
+        } catch (err) {
+            alert('Erro de conexão.');
+        }
+    };
+
+    // ==================== IMPORTAR ====================
+    document.getElementById('fileImport').addEventListener('change', async (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+
+        const texto = await file.text();
+        let payload;
+        try {
+            payload = JSON.parse(texto);
+        } catch {
+            alert('Arquivo JSON inválido.');
+            return;
+        }
+
+        if (!payload.inscricoes || !Array.isArray(payload.inscricoes)) {
+            alert('Estrutura inválida. Esperado: { "inscricoes": [...] }');
+            return;
+        }
+
+        if (!confirm(`Importar ${payload.inscricoes.length} inscrições? Inscrições com número já existente serão ignoradas.`)) {
+            return;
+        }
+
+        try {
+            const r = await fetch(API.importar, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload),
+            });
+            const data = await r.json();
+            if (data.ok) {
+                alert(`Importados: ${data.importados}\nIgnorados: ${data.ignorados}`);
+                carregar();
+            } else {
+                alert('Erro: ' + (data.erro || 'desconhecido'));
+            }
+        } catch {
+            alert('Erro de conexão.');
+        } finally {
+            e.target.value = '';
+        }
+    });
+
+    // ==================== BUSCA ====================
+    document.getElementById('busca').addEventListener('input', (e) => {
+        const q = e.target.value.toLowerCase().trim();
+        if (!q) {
+            renderizarTabela(todasInscricoes);
+            return;
+        }
+        const filtrado = todasInscricoes.filter(i =>
+            (i.numero_cadastro || '').includes(q) ||
+            (i.nome || '').toLowerCase().includes(q) ||
+            (i.telefone || '').includes(q) ||
+            (i.turma || '').toLowerCase().includes(q)
+        );
+        renderizarTabela(filtrado);
+    });
+
+    // ==================== ATUALIZAR ====================
+    document.getElementById('btnAtualizar').addEventListener('click', carregar);
+
+    // ==================== INICIAL ====================
+    carregar();
+</script>
+</body>
+</html>
