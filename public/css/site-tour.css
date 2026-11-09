@@ -1,0 +1,143 @@
+.site-tour-trigger {
+    position: fixed;
+    right: 20px;
+    bottom: 20px;
+    z-index: 20000;
+    padding: 12px 18px;
+    border: 1px solid #4d94ff;
+    border-radius: 999px;
+    background: #0033a0;
+    color: #fff;
+    font: 700 0.85rem/1.2 Arial, sans-serif;
+    cursor: pointer;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+}
+
+.site-tour-trigger:hover,
+.site-tour-trigger:focus-visible {
+    background: #0066ff;
+}
+
+.site-tour-backdrop[hidden] {
+    display: none;
+}
+
+.site-tour-backdrop {
+    position: fixed;
+    inset: 0;
+    z-index: 20001;
+    display: grid;
+    place-items: center;
+    padding: 20px;
+    background: rgba(0, 3, 12, 0.72);
+    font-family: Arial, sans-serif;
+}
+
+.site-tour-dialog {
+    position: relative;
+    z-index: 20003;
+    width: min(100%, 480px);
+    padding: 30px;
+    border: 1px solid rgba(77, 148, 255, 0.6);
+    border-top: 4px solid #0066ff;
+    background: #030a18;
+    color: #fff;
+    box-shadow: 0 20px 70px rgba(0, 0, 0, 0.65);
+}
+
+.site-tour-count {
+    margin: 0 32px 10px 0;
+    color: #7fb0ff;
+    font-size: 0.75rem;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+}
+
+.site-tour-dialog h2 {
+    margin: 0 32px 12px 0;
+    color: #fff;
+    font-size: 1.55rem;
+}
+
+.site-tour-dialog > p:last-of-type {
+    margin: 0;
+    color: #c4ccda;
+    font-size: 0.98rem;
+    line-height: 1.65;
+}
+
+.site-tour-close {
+    position: absolute;
+    top: 12px;
+    right: 14px;
+    border: 0;
+    background: transparent;
+    color: #c4ccda;
+    font-size: 1.7rem;
+    cursor: pointer;
+}
+
+.site-tour-actions,
+.site-tour-navigation {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+}
+
+.site-tour-actions {
+    margin-top: 24px;
+}
+
+.site-tour-navigation button,
+.site-tour-skip {
+    min-height: 42px;
+    padding: 10px 14px;
+    border: 1px solid #4d94ff;
+    background: transparent;
+    color: #fff;
+    font: 700 0.82rem/1.2 Arial, sans-serif;
+    cursor: pointer;
+}
+
+.site-tour-navigation .site-tour-next {
+    border-color: #0066ff;
+    background: #0033a0;
+}
+
+.site-tour-navigation button:hover,
+.site-tour-skip:hover {
+    background: #0066ff;
+}
+
+.site-tour-highlight {
+    outline: 3px solid #4d94ff !important;
+    outline-offset: 5px;
+    box-shadow: 0 0 0 10px rgba(0, 102, 255, 0.18) !important;
+    border-radius: 3px;
+}
+
+@media (max-width: 600px) {
+    .site-tour-trigger {
+        right: 14px;
+        bottom: 14px;
+        padding: 12px 15px;
+    }
+
+    .site-tour-backdrop {
+        padding: 14px;
+    }
+
+    .site-tour-dialog {
+        padding: 25px 20px 20px;
+    }
+
+    .site-tour-dialog h2 {
+        font-size: 1.3rem;
+    }
+
+    .site-tour-dialog > p:last-of-type {
+        font-size: 0.92rem;
+    }
+}
