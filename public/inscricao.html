@@ -319,7 +319,7 @@
 
             <!-- 03 · RESPONSÁVEL LEGAL -->
             <div class="form-step reveal">
-                <span class="step-num">03</span>
+                <span class="step-num" id="step03">03</span>
                 <h3>Dados do Responsável Legal</h3>
                 <p class="desc">Obrigatório apenas para menores de 18 anos.</p>
                 <div id="avisoMenor" class="aviso-menor">
@@ -343,7 +343,7 @@
 
             <!-- 04 · CONTATO DE EMERGÊNCIA -->
             <div class="form-step reveal">
-                <span class="step-num">04</span>
+                <span class="step-num" id="step04">04</span>
                 <h3>Contato de Emergência</h3>
                 <p class="desc">Não pode ser o mesmo número do aluno.</p>
                 <div class="form-grid">
@@ -459,14 +459,16 @@ function calcIdade() {
     return (i >= 0 && i < 130) ? i : null;
 }
 
-inputNasc.addEventListener('change', () => {
-    const i = calcIdade();
-    idadeOut.value = i !== null ? i + ' anos' : '';
-    const menor = i !== null && i < 18;
-    avisoMenor.style.display = menor ? 'block' : 'none';
-    respNome.required = menor;
-    respTel.required  = menor;
-});
+const step04 = document.getElementById('step04');
+  inputNasc.addEventListener('change', () => {
+      const i = calcIdade();
+      idadeOut.value = i !== null ? i + ' anos' : '';
+      const menor = i !== null && i < 18;
+      avisoMenor.style.display = menor ? 'block' : 'none';
+      respNome.required = menor;
+      respTel.required  = menor;
+      step04.style.display = menor ? 'none' : 'block';
+  });
 
 // ================= PERGUNTAS DE SAÚDE =================
 const perguntas = [
