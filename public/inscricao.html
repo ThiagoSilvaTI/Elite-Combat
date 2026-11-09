@@ -38,6 +38,11 @@
         font: inherit; letter-spacing: 1px; text-transform: uppercase; cursor: pointer; }
     .step-button:hover { background: rgba(0,102,255,.15); }
     .step-button[hidden] { display: none; }
+    .instructor-confirmation { margin-top: 15px; padding: 15px; background: rgba(0,102,255,.08);
+        border-left: 3px solid #0066FF; color: #fff; }
+    .instructor-confirmation[hidden] { display: none !important; }
+    .instructor-confirmation label { display: flex; align-items: flex-start; gap: 10px;
+        color: #fff; text-transform: none; letter-spacing: 0; font-size: .9rem; }
     .form-step h3 { font-family: var(--font-display, 'Anton', sans-serif); font-size: 1.6rem;
         text-transform: uppercase; letter-spacing: 2px; margin-bottom: 8px; color: #fff; }
     .form-step .step-num { font-family: var(--font-display, 'Anton', sans-serif); color: rgba(0,102,255,.25);
@@ -270,14 +275,21 @@
                 <h3>Turma e Experiência</h3>
                 <div class="form-grid">
                     <div class="full">
-                        <label>Turma pretendida *</label>
-                        <select name="turma" required>
-                            <option value="">Selecione...</option>
-                            <option>Baby Thai (4 a 6 anos)</option>
-                            <option>Kids (7 a 13 anos)</option>
-                            <option>Juvenil / Adulto (14+)</option>
-                            <option>Personal Fighter</option>
+                        <label>Turma (definida pela idade)</label>
+                        <input type="text" name="turma" id="turma" readonly placeholder="Informe a data de nascimento">
+                    </div>
+                    <div class="full">
+                        <label>Tipo de inscrição *</label>
+                        <select name="tipo_inscricao" id="tipoInscricao" required>
+                            <option value="aluno">Aluno</option>
+                            <option value="instrutor">Instrutor</option>
                         </select>
+                        <div class="instructor-confirmation" id="confirmacaoInstrutor" hidden>
+                            <label>
+                                <input type="checkbox" name="autorizacao_instrutor" id="autorizacaoInstrutor">
+                                <span>Confirmo autorização do professor de que agora sou Instrutor Elite</span>
+                            </label>
+                        </div>
                     </div>
                     <div>
                         <label>Período preferido</label>
@@ -456,6 +468,9 @@ const avisoMenor = document.getElementById('avisoMenor');
 const respNome = document.getElementById('resp_nome');
 const respTel  = document.getElementById('resp_telefone');
 const form = document.getElementById('formInscricao');
+const tipoInscricao = document.getElementById('tipoInscricao');
+const confirmacaoInstrutor = document.getElementById('confirmacaoInstrutor');
+const autorizacaoInstrutor = document.getElementById('autorizacaoInstrutor');
 
 function calcIdade() {
     if (!inputNasc.value) return null;
@@ -465,6 +480,16 @@ function calcIdade() {
     const m = h.getMonth() - n.getMonth();
     if (m < 0 || (m === 0 && h.getDate() < n.getDate())) i--;
     return (i >= 0 && i < 130) ? i : null;
+}
+
+function validarIdadeMinima() {
+    const age = calcIdade();
+    if (age !== null && age < 4) {
+        showStep(0, false);
+        mostrarErro('A idade mínima para inscrição é 4 anos.');
+        return false;
+    }
+    return true;
 }
 
 const stepCards = Array.from(document.querySelectorAll('#formInscricao .form-step'));
@@ -515,6 +540,7 @@ stepCards.forEach(card => {
     });
     nav.querySelector('.step-next').addEventListener('click', () => {
         syncAge();
+        if (currentStep === 0 && !validarIdadeMinima()) return;
         if (!isStepValid(visibleSteps[currentStep])) return;
         if (currentStep < visibleSteps.length - 1) showStep(currentStep + 1);
     });
@@ -524,6 +550,8 @@ function syncAge() {
     const age = calcIdade();
     const minor = age !== null && age < 18;
     idadeOut.value = age !== null ? age + ' anos' : '';
+    form.turma.value = age === null || age < 4 ? '' : age < 7 ? 'Baby Thai (4 a 6 anos)' :
+        age < 14 ? 'Kids (7 a 13 anos)' : 'Juvenil / Adulto (14+)';
     avisoMenor.style.display = minor ? 'block' : 'none';
     respNome.required = minor;
     respTel.required = minor;
@@ -545,6 +573,13 @@ function syncAge() {
     const targetIndex = nextIndex === -1 ? Math.min(currentStep, visibleSteps.length - 1) : nextIndex;
     showStep(targetIndex, activeCard !== visibleSteps[targetIndex]);
 }
+
+tipoInscricao.addEventListener('change', () => {
+    const instructor = tipoInscricao.value === 'instrutor';
+    confirmacaoInstrutor.hidden = !instructor;
+    autorizacaoInstrutor.required = instructor;
+    if (!instructor) autorizacaoInstrutor.checked = false;
+});
 
 inputNasc.addEventListener('input', syncAge);
 inputNasc.addEventListener('change', syncAge);
@@ -589,6 +624,13 @@ perguntas.forEach((p, idx) => {
 const msgErro = document.getElementById('msgErro');
 const btnEnviar = document.getElementById('btnEnviar');
 
+inputNasc.addEventListener('input', () => {
+    if (calcIdade() >= 4 && msgErro.textContent === 'A idade mínima para inscrição é 4 anos.') {
+        msgErro.textContent = '';
+        msgErro.style.display = 'none';
+    }
+});
+
 function mostrarErro(txt) {
     msgErro.textContent = txt;
     msgErro.style.display = 'block';
@@ -600,6 +642,7 @@ form.addEventListener('submit', async (e) => {
     msgErro.style.display = 'none';
 
     syncAge();
+    if (!validarIdadeMinima()) return;
     for (const card of visibleSteps) {
         if (!isStepValid(card)) {
             showStep(visibleSteps.indexOf(card));
@@ -644,6 +687,8 @@ form.addEventListener('submit', async (e) => {
         data_nascimento: form.data_nascimento.value,
         telefone: form.telefone.value,
         turma: form.turma.value,
+        tipo_inscricao: tipoInscricao.value,
+        autorizacao_instrutor: autorizacaoInstrutor.checked,
         periodo: form.periodo.value,
         horario: form.horario.value,
         ja_muaythai: form.ja_muaythai.value,

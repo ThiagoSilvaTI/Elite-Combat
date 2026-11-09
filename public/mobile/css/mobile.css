@@ -673,6 +673,34 @@ a {
     display: none !important;
 }
 
+.instructor-confirmation {
+    margin-top: 12px;
+    padding: 14px;
+    background: rgba(0, 102, 255, 0.08);
+    border-left: 3px solid var(--blue-ice);
+    color: #fff;
+}
+
+.instructor-confirmation[hidden] {
+    display: none !important;
+}
+
+.instructor-confirmation label {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    color: #fff;
+    text-transform: none;
+    letter-spacing: 0;
+    font-size: 0.85rem;
+    line-height: 1.5;
+}
+
+.instructor-confirmation input {
+    flex-shrink: 0;
+    margin-top: 3px;
+}
+
 .step-navigation {
     display: flex;
     align-items: center;

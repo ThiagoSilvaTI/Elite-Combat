@@ -34,6 +34,8 @@ db.exec(`
     modalidade    TEXT,
     tempo_pratica TEXT,
     objetivo      TEXT,
+    tipo_inscricao TEXT NOT NULL DEFAULT 'aluno',
+    autorizacao_instrutor INTEGER NOT NULL DEFAULT 0,
     resp_nome     TEXT,
     resp_parentesco TEXT,
     resp_telefone TEXT,
@@ -47,6 +49,16 @@ db.exec(`
     criado_em     TEXT DEFAULT (datetime('now'))
   );
 `);
+
+const colunasInscricao = new Set(
+  db.prepare('PRAGMA table_info(inscricoes)').all().map((coluna) => coluna.name)
+);
+if (!colunasInscricao.has('tipo_inscricao')) {
+  db.exec("ALTER TABLE inscricoes ADD COLUMN tipo_inscricao TEXT NOT NULL DEFAULT 'aluno'");
+}
+if (!colunasInscricao.has('autorizacao_instrutor')) {
+  db.exec('ALTER TABLE inscricoes ADD COLUMN autorizacao_instrutor INTEGER NOT NULL DEFAULT 0');
+}
 
 // ================== DETECÇÃO DE DISPOSITIVO ==================
 /**
@@ -153,7 +165,7 @@ app.post('/api/inscricao', (req, res) => {
   try {
     const b = req.body || {};
 
-    const obrig = ['nome', 'data_nascimento', 'telefone', 'turma'];
+    const obrig = ['nome', 'data_nascimento', 'telefone'];
     for (const campo of obrig) {
       if (!b[campo] || !String(b[campo]).trim()) {
         return res.status(400).json({ ok: false, erro: `Campo obrigatório: ${campo}` });
@@ -168,8 +180,25 @@ app.post('/api/inscricao', (req, res) => {
     let idade = hoje.getFullYear() - nasc.getFullYear();
     const m = hoje.getMonth() - nasc.getMonth();
     if (m < 0 || (m === 0 && hoje.getDate() < nasc.getDate())) idade--;
-    if (idade < 0 || idade > 120) {
+    if (idade < 4) {
+      return res.status(400).json({ ok: false, erro: 'A idade mínima para inscrição é 4 anos.' });
+    }
+    if (idade > 120) {
       return res.status(400).json({ ok: false, erro: 'Idade fora do intervalo permitido.' });
+    }
+
+    const turma = idade < 7 ? 'Baby Thai (4 a 6 anos)' :
+      idade < 14 ? 'Kids (7 a 13 anos)' : 'Juvenil / Adulto (14+)';
+    const tipo_inscricao = b.tipo_inscricao || 'aluno';
+    if (!['aluno', 'instrutor'].includes(tipo_inscricao)) {
+      return res.status(400).json({ ok: false, erro: 'Tipo de inscrição inválido.' });
+    }
+    const autorizacao_instrutor = tipo_inscricao === 'instrutor' && b.autorizacao_instrutor === true;
+    if (tipo_inscricao === 'instrutor' && !autorizacao_instrutor) {
+      return res.status(400).json({
+        ok: false,
+        erro: 'Confirme a autorização do professor para a inscrição como Instrutor Elite.',
+      });
     }
 
     const menor = idade < 18;
@@ -217,6 +246,7 @@ app.post('/api/inscricao', (req, res) => {
         numero_cadastro, data_preenchimento, responsavel_atendimento,
         nome, data_nascimento, idade, telefone,
         turma, periodo, horario, ja_muaythai, ja_outra_arte, modalidade, tempo_pratica, objetivo,
+        tipo_inscricao, autorizacao_instrutor,
         resp_nome, resp_parentesco, resp_telefone,
         emerg_nome, emerg_parentesco, emerg_telefone,
         saude_json, adaptacoes, autorizou_dados
@@ -224,6 +254,7 @@ app.post('/api/inscricao', (req, res) => {
         @numero_cadastro, @data_preenchimento, @responsavel_atendimento,
         @nome, @data_nascimento, @idade, @telefone,
         @turma, @periodo, @horario, @ja_muaythai, @ja_outra_arte, @modalidade, @tempo_pratica, @objetivo,
+        @tipo_inscricao, @autorizacao_instrutor,
         @resp_nome, @resp_parentesco, @resp_telefone,
         @emerg_nome, @emerg_parentesco, @emerg_telefone,
         @saude_json, @adaptacoes, @autorizou_dados
@@ -239,7 +270,7 @@ app.post('/api/inscricao', (req, res) => {
       data_nascimento: b.data_nascimento,
       idade,
       telefone: b.telefone.trim(),
-      turma: b.turma,
+      turma,
       periodo: b.periodo || null,
       horario: b.horario || null,
       ja_muaythai: b.ja_muaythai || null,
@@ -247,6 +278,8 @@ app.post('/api/inscricao', (req, res) => {
       modalidade: b.modalidade || null,
       tempo_pratica: b.tempo_pratica || null,
       objetivo: b.objetivo || null,
+      tipo_inscricao,
+      autorizacao_instrutor: autorizacao_instrutor ? 1 : 0,
       resp_nome: menor ? b.resp_nome.trim() : null,
       resp_parentesco: menor ? b.resp_parentesco || null : null,
       resp_telefone: menor ? b.resp_telefone.trim() : null,
@@ -269,7 +302,9 @@ app.post('/api/inscricao', (req, res) => {
       data_nascimento: b.data_nascimento,
       idade,
       telefone: b.telefone.trim(),
-      turma: b.turma,
+      turma,
+      tipo_inscricao,
+      autorizacao_instrutor,
       periodo: b.periodo || '-',
       horario: b.horario || '-',
       resp_nome: menor ? b.resp_nome.trim() : null,
@@ -364,6 +399,8 @@ app.get('/api/integracao/inscricao', (req, res) => {
       idade: row.idade,
       telefone: row.telefone,
       turma: row.turma,
+      tipo_inscricao: row.tipo_inscricao || 'aluno',
+      autorizacao_instrutor: !!row.autorizacao_instrutor,
       periodo: row.periodo,
       horario: row.horario,
       ja_muaythai: row.ja_muaythai,
@@ -401,6 +438,10 @@ function gerarContrato(d) {
   linhas.push(`Idade ...................: ${d.idade} anos`);
   linhas.push(`Telefone / WhatsApp .....: ${d.telefone}`);
   linhas.push(`Turma ...................: ${d.turma}`);
+  linhas.push(`Tipo de inscrição .......: ${d.tipo_inscricao === 'instrutor' ? 'Instrutor Elite' : 'Aluno'}`);
+  if (d.tipo_inscricao === 'instrutor' && d.autorizacao_instrutor) {
+    linhas.push('Autorização professor ...: Confirmada');
+  }
   linhas.push(`Período .................: ${d.periodo}`);
   linhas.push(`Horário .................: ${d.horario}`);
   if (d.resp_nome) {
@@ -487,7 +528,7 @@ app.get('/api/admin/inscricoes', exigirAdmin, (req, res) => {
     const rows = db
       .prepare(
         `SELECT id, numero_cadastro, data_preenchimento, nome, idade, telefone,
-                turma, periodo, horario, objetivo,
+                turma, tipo_inscricao, autorizacao_instrutor, periodo, horario, objetivo,
                 resp_nome, resp_telefone,
                 emerg_nome, emerg_telefone,
                 saude_json, adaptacoes,
@@ -545,6 +586,7 @@ app.post('/api/admin/importar', exigirAdmin, express.json({ limit: '10mb' }), (r
         numero_cadastro, data_preenchimento, responsavel_atendimento,
         nome, data_nascimento, idade, telefone,
         turma, periodo, horario, ja_muaythai, ja_outra_arte, modalidade, tempo_pratica, objetivo,
+        tipo_inscricao, autorizacao_instrutor,
         resp_nome, resp_parentesco, resp_telefone,
         emerg_nome, emerg_parentesco, emerg_telefone,
         saude_json, adaptacoes, autorizou_dados,
@@ -553,6 +595,7 @@ app.post('/api/admin/importar', exigirAdmin, express.json({ limit: '10mb' }), (r
         @numero_cadastro, @data_preenchimento, @responsavel_atendimento,
         @nome, @data_nascimento, @idade, @telefone,
         @turma, @periodo, @horario, @ja_muaythai, @ja_outra_arte, @modalidade, @tempo_pratica, @objetivo,
+        @tipo_inscricao, @autorizacao_instrutor,
         @resp_nome, @resp_parentesco, @resp_telefone,
         @emerg_nome, @emerg_parentesco, @emerg_telefone,
         @saude_json, @adaptacoes, @autorizou_dados,
@@ -574,6 +617,8 @@ app.post('/api/admin/importar', exigirAdmin, express.json({ limit: '10mb' }), (r
           idade: r.idade || 0,
           telefone: r.telefone || '',
           turma: r.turma || '',
+          tipo_inscricao: r.tipo_inscricao || 'aluno',
+          autorizacao_instrutor: r.autorizacao_instrutor ? 1 : 0,
           periodo: r.periodo || null,
           horario: r.horario || null,
           ja_muaythai: r.ja_muaythai || null,
