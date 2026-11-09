@@ -125,20 +125,24 @@
 @media (max-width: 700px) {
     .site-tour-trigger {
         right: 14px;
-        bottom: 14px;
+        bottom: calc(14px + env(safe-area-inset-bottom, 0px));
         padding: 11px 14px;
     }
 
     .site-tour-panel {
         align-items: flex-end;
-        padding: 12px 12px 66px;
+        padding:
+            12px
+            calc(12px + env(safe-area-inset-right, 0px))
+            calc(66px + env(safe-area-inset-bottom, 0px))
+            calc(12px + env(safe-area-inset-left, 0px));
     }
 
     .site-tour-dialog {
-        width: min(100%, 360px);
-        max-height: 38vh;
+        width: min(82vw, 300px);
+        max-height: min(34vh, 300px);
         margin-left: auto;
-        padding: 18px 18px 16px;
+        padding: 16px 16px 14px;
     }
 
     .site-tour-dialog h2 {

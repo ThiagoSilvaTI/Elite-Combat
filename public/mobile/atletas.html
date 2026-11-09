@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <meta name="theme-color" content="#000205">
+    <title>Atletas | Elite Combat</title>
+    <link rel="stylesheet" href="css/mobile.css">
+    <script>
+    (function () {
+      var pref = document.cookie.match(/(?:^|;\s*)preferencia_versao=([^;]+)/);
+      if (pref && decodeURIComponent(pref[1]) === 'mobile') return;
+      if (pref && decodeURIComponent(pref[1]) === 'desktop') {
+        window.location.replace('/');
+        return;
+      }
+
+      var isMobile =
+        /Android|webOS|iPhone|iPad|iPod|BlackBerry|Windows Phone|Opera Mini|IEMobile|Mobile/i.test(
+          navigator.userAgent
+        ) ||
+        (navigator.maxTouchPoints > 1 && /Macintosh/i.test(navigator.userAgent));
+
+      if (!isMobile) window.location.replace('/');
+    })();
+    </script>
+</head>
+<body>
+
+<header class="header">
+    <a href="index.html" class="header-logo">
+        <img src="../img/351028003_261521669880100_2084842963756590402_n.jpg" alt="Elite Combat">
+        <div class="logo-text">
+            <span class="main">ELITE COMBAT</span>
+            <span class="sub">Muay Thai</span>
+        </div>
+    </a>
+    <button class="menu-btn" id="menuBtn" aria-label="Menu">
+        <span></span><span></span><span></span>
+    </button>
+</header>
+
+<div class="overlay" id="overlay"></div>
+<nav class="nav-drawer" id="navDrawer">
+    <a href="index.html">Home</a>
+    <a href="aulas.html">Aulas</a>
+    <a href="equipamentos.html">Equipamentos</a>
+    <a href="contato.html">Contato</a>
+    <a href="atletas.html" class="active">Atletas</a>
+    <a href="inscricao.html" class="btn-athlete-mobile">Quero me Inscrever</a>
+</nav>
+
+<main class="section">
+    <div class="section-header">
+        <h1 class="section-title">Página de <span>Atletas</span></h1>
+        <div class="section-number">06</div>
+    </div>
+
+    <div class="about-card">
+        <h4>Página de atletas em breve</h4>
+        <p>Estamos preparando este espaço para os atletas da Elite Combat. Volte em breve para conferir as novidades.</p>
+    </div>
+
+    <div class="contact-actions">
+        <a href="index.html" class="btn">Voltar para o início</a>
+        <a href="aulas.html" class="btn btn-outline">Conheça as turmas</a>
+    </div>
+</main>
+
+<footer class="footer">
+    <div class="footer-grid">
+        <div class="footer-col">
+            <h4>Elite Combat</h4>
+            <p>Muay Thai de alto rendimento em Bom Jardim - MA.</p>
+        </div>
+        <div class="footer-col">
+            <h4>Links</h4>
+            <a href="aulas.html">Aulas</a>
+            <a href="equipamentos.html">Equipamentos</a>
+            <a href="contato.html">Contato</a>
+        </div>
+        <div class="footer-col">
+            <h4>Social</h4>
+            <a href="https://www.instagram.com/elitecombat_/" target="_blank" rel="noopener">Instagram Academia</a>
+            <a href="https://www.instagram.com/saymon_danilo/" target="_blank" rel="noopener">Instagram Mestre</a>
+        </div>
+    </div>
+    <div class="footer-bottom">
+        <p>&copy; 2023 Elite Combat. Todos os direitos reservados.</p>
+    </div>
+</footer>
+
+<button class="back-top" id="backTop" aria-label="Voltar ao topo">↑</button>
+<script src="js/mobile.js"></script>
+</body>
+</html>
