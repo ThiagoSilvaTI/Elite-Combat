@@ -153,18 +153,11 @@ app.post('/api/inscricao', (req, res) => {
   try {
     const b = req.body || {};
 
-    const obrig = ['nome', 'data_nascimento', 'telefone', 'turma', 'emerg_nome', 'emerg_telefone'];
+    const obrig = ['nome', 'data_nascimento', 'telefone', 'turma'];
     for (const campo of obrig) {
       if (!b[campo] || !String(b[campo]).trim()) {
         return res.status(400).json({ ok: false, erro: `Campo obrigatório: ${campo}` });
       }
-    }
-
-    const norm = (t) => String(t || '').replace(/\D/g, '');
-    if (norm(b.telefone) === norm(b.emerg_telefone)) {
-      return res
-        .status(400)
-        .json({ ok: false, erro: 'O telefone de emergência não pode ser igual ao seu telefone.' });
     }
 
     const nasc = new Date(b.data_nascimento);
@@ -181,17 +174,30 @@ app.post('/api/inscricao', (req, res) => {
 
     const menor = idade < 18;
     if (menor) {
-      if (!b.resp_nome || !b.resp_nome.trim()) {
+      if (!String(b.resp_nome || '').trim()) {
         return res
           .status(400)
           .json({ ok: false, erro: 'Responsável legal obrigatório para menores de 18 anos.' });
       }
-      if (!b.resp_telefone || !b.resp_telefone.trim()) {
+      if (!String(b.resp_telefone || '').trim()) {
         return res.status(400).json({
           ok: false,
           erro: 'Telefone do responsável obrigatório para menores de 18 anos.',
         });
       }
+      if (!String(b.emerg_nome || '').trim() || !String(b.emerg_telefone || '').trim()) {
+        return res.status(400).json({
+          ok: false,
+          erro: 'Contato de emergência obrigatório para menores de 18 anos.',
+        });
+      }
+    }
+
+    const norm = (t) => String(t || '').replace(/\D/g, '');
+    if (b.emerg_telefone && norm(b.telefone) === norm(b.emerg_telefone)) {
+      return res
+        .status(400)
+        .json({ ok: false, erro: 'O telefone de emergência não pode ser igual ao seu telefone.' });
     }
 
     if (b.autorizou_dados !== 'sim') {
@@ -244,9 +250,9 @@ app.post('/api/inscricao', (req, res) => {
       resp_nome: menor ? b.resp_nome.trim() : null,
       resp_parentesco: menor ? b.resp_parentesco || null : null,
       resp_telefone: menor ? b.resp_telefone.trim() : null,
-      emerg_nome: b.emerg_nome.trim(),
+      emerg_nome: String(b.emerg_nome || '').trim(),
       emerg_parentesco: b.emerg_parentesco || null,
-      emerg_telefone: b.emerg_telefone.trim(),
+      emerg_telefone: String(b.emerg_telefone || '').trim(),
       saude_json: JSON.stringify(saude),
       adaptacoes: b.adaptacoes || null,
       autorizou_dados: b.autorizou_dados,
@@ -268,8 +274,8 @@ app.post('/api/inscricao', (req, res) => {
       horario: b.horario || '-',
       resp_nome: menor ? b.resp_nome.trim() : null,
       resp_telefone: menor ? b.resp_telefone.trim() : null,
-      emerg_nome: b.emerg_nome.trim(),
-      emerg_telefone: b.emerg_telefone.trim(),
+      emerg_nome: String(b.emerg_nome || '').trim() || 'Não informado',
+      emerg_telefone: String(b.emerg_telefone || '').trim() || 'Não informado',
       adaptacoes: b.adaptacoes || 'Nenhuma informada',
       saude,
     });
