@@ -69,10 +69,18 @@ db.exec(`
     numero_cadastro TEXT PRIMARY KEY,
     nota INTEGER NOT NULL CHECK (nota BETWEEN 1 AND 5),
     recomendacao TEXT NOT NULL,
+    email TEXT,
     criado_em TEXT NOT NULL DEFAULT (datetime('now')),
     atualizado_em TEXT NOT NULL DEFAULT (datetime('now'))
   );
 `);
+
+const colunasFeedback = new Set(
+  db.prepare('PRAGMA table_info(feedbacks)').all().map((coluna) => coluna.name)
+);
+if (!colunasFeedback.has('email')) {
+  db.exec('ALTER TABLE feedbacks ADD COLUMN email TEXT');
+}
 
 function normalizarTelefone(valor) {
   const digits = String(valor || '').replace(/\D/g, '');
@@ -170,7 +178,7 @@ app.get('/api/preferencia', (req, res) => {
 app.get('/api/feedback', (req, res) => {
   try {
     const feedbacks = db.prepare(`
-      SELECT i.nome, f.nota, f.recomendacao, f.atualizado_em
+      SELECT COALESCE(f.email, i.nome) AS email, f.nota, f.recomendacao, f.atualizado_em
       FROM feedbacks f
       JOIN inscricoes i ON i.numero_cadastro = f.numero_cadastro
       ORDER BY f.atualizado_em DESC
@@ -187,6 +195,7 @@ app.post('/api/feedback', (req, res) => {
   try {
     const numero = String(req.body?.numero_cadastro || '').trim();
     const telefone = String(req.body?.telefone || '').trim();
+    const email = String(req.body?.email || '').trim();
     const recomendacao = String(req.body?.recomendacao || '').trim();
     const nota = Number(req.body?.nota);
     const consentimento = req.body?.consentimento === true;
@@ -196,6 +205,9 @@ app.post('/api/feedback', (req, res) => {
         ok: false,
         erro: 'Informe um número de cadastro válido e o telefone usado na inscrição.',
       });
+    }
+    if (email.length > 254 || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      return res.status(400).json({ ok: false, erro: 'Informe um endereço de e-mail válido.' });
     }
     if (!Number.isInteger(nota) || nota < 1 || nota > 5) {
       return res.status(400).json({ ok: false, erro: 'Escolha uma nota de 1 a 5.' });
@@ -209,7 +221,7 @@ app.post('/api/feedback', (req, res) => {
     if (!consentimento) {
       return res.status(400).json({
         ok: false,
-        erro: 'Autorize a publicação da sua avaliação junto ao nome da ficha.',
+        erro: 'Autorize a publicação da sua avaliação junto ao e-mail informado.',
       });
     }
 
@@ -224,18 +236,19 @@ app.post('/api/feedback', (req, res) => {
     }
 
     db.prepare(`
-      INSERT INTO feedbacks (numero_cadastro, nota, recomendacao)
-      VALUES (?, ?, ?)
+      INSERT INTO feedbacks (numero_cadastro, nota, recomendacao, email)
+      VALUES (?, ?, ?, ?)
       ON CONFLICT(numero_cadastro) DO UPDATE SET
         nota = excluded.nota,
         recomendacao = excluded.recomendacao,
+        email = excluded.email,
         atualizado_em = datetime('now')
-    `).run(numero, nota, recomendacao);
+    `).run(numero, nota, recomendacao, email);
 
     return res.json({
       ok: true,
       mensagem: 'Obrigado por compartilhar sua avaliação!',
-      nome: inscricao.nome,
+      email,
     });
   } catch (err) {
     console.error('Erro ao salvar feedback:', err);

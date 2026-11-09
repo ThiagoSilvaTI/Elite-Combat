@@ -85,7 +85,7 @@
         <h2 class="section-title">Feedback dos <span>Alunos</span></h2>
         <div class="section-number">05</div>
     </div>
-    <p class="feedback-intro">Já se inscreveu? Confirme seu número de cadastro e telefone para avaliar o site. Sua nota e recomendação serão publicadas com o nome da ficha; um novo envio atualiza sua avaliação.</p>
+    <p class="feedback-intro">Já se inscreveu? Confirme seu número de cadastro e telefone para avaliar o site. Sua nota e recomendação serão publicadas com o e-mail informado; um novo envio atualiza sua avaliação.</p>
 
     <form class="feedback-form" id="feedbackForm">
         <div class="feedback-credentials">
@@ -96,6 +96,10 @@
             <div>
                 <label for="feedbackTelefone">Telefone da inscrição</label>
                 <input type="tel" id="feedbackTelefone" name="telefone" autocomplete="tel" placeholder="(99) 99999-9999" required>
+            </div>
+            <div>
+                <label for="feedbackEmail">E-mail que será exibido no feedback</label>
+                <input type="email" id="feedbackEmail" name="email" maxlength="254" autocomplete="email" placeholder="seu@email.com" required>
             </div>
         </div>
         <fieldset class="feedback-rating">
@@ -114,7 +118,7 @@
         </div>
         <label class="feedback-consent">
             <input type="checkbox" name="consentimento" required>
-            <span>Autorizo a publicação da minha nota e recomendação junto ao nome da minha ficha de inscrição.</span>
+            <span>Autorizo a publicação da minha nota, recomendação e do e-mail informado.</span>
         </label>
         <button type="submit" class="btn feedback-submit">Enviar feedback</button>
         <p class="feedback-status" id="feedbackStatus" role="status" aria-live="polite"></p>

@@ -27,8 +27,8 @@
             const heading = document.createElement('div');
             heading.className = 'feedback-card-heading';
 
-            const name = document.createElement('h3');
-            name.textContent = feedback.nome;
+            const email = document.createElement('h3');
+            email.textContent = feedback.email;
 
             const stars = document.createElement('span');
             stars.className = 'feedback-card-stars';
@@ -38,7 +38,7 @@
             const recommendation = document.createElement('p');
             recommendation.textContent = feedback.recomendacao;
 
-            heading.append(name, stars);
+            heading.append(email, stars);
             card.append(heading, recommendation);
             list.appendChild(card);
         });
@@ -79,6 +79,7 @@
                 body: JSON.stringify({
                     numero_cadastro: form.elements.numero_cadastro.value,
                     telefone: form.elements.telefone.value,
+                    email: form.elements.email.value,
                     nota: Number(form.elements.nota.value),
                     recomendacao: form.elements.recomendacao.value,
                     consentimento: form.elements.consentimento.checked
