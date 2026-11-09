@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <meta name="theme-color" content="#08090d">
+    <meta name="referrer" content="no-referrer">
+    <title>Minha ficha | Elite Combat</title>
+    <link rel="stylesheet" href="css/mobile.css">
+    <link rel="stylesheet" href="../css/ficha.css">
+</head>
+<script>
+(() => {
+    const pref = document.cookie.match(/(?:^|;\s*)preferencia_versao=([^;]+)/);
+    if (pref) return;
+    const desktop = !/Android|webOS|iPhone|iPad|iPod|BlackBerry|Windows Phone|Opera Mini|IEMobile|Mobile/i.test(navigator.userAgent) &&
+        !(navigator.maxTouchPoints > 1 && /Macintosh/i.test(navigator.userAgent));
+    if (desktop) window.location.replace('/ficha.html' + window.location.search);
+})();
+</script>
+<body class="account-page">
+<header class="account-header">
+    <a class="account-brand" href="index.html">
+        <img src="../img/351028003_261521669880100_2084842963756590402_n.jpg" alt="">
+        <div><strong>ELITE COMBAT</strong><span>Muay Thai</span></div>
+    </a>
+    <nav aria-label="Navegação principal">
+        <a href="index.html">Início</a>
+        <a href="contato.html">Contato</a>
+        <a href="inscricao.html">Inscrição</a>
+    </nav>
+</header>
+<main class="account-main">
+    <h1>Minha ficha e contrato</h1>
+    <p class="account-lead">Consulte seus dados com segurança, atualize sua ficha e baixe o contrato atualizado.</p>
+    <p id="accountMessage" class="account-message" role="status" aria-live="polite"></p>
+    <section id="loginPanel" class="account-card">
+        <h2>Acessar minha ficha</h2>
+        <form id="loginForm">
+            <div class="account-form-grid">
+                <div class="account-field"><label for="loginNumber">Número de cadastro (11 dígitos)</label><input id="loginNumber" name="numero_cadastro" inputmode="numeric" pattern="[0-9]{11}" maxlength="11" autocomplete="username" required></div>
+                <div class="account-field"><label for="loginPassword">Senha numérica</label><input id="loginPassword" name="senha" type="password" inputmode="numeric" pattern="[0-9]{6,64}" minlength="6" maxlength="64" autocomplete="current-password" required></div>
+            </div>
+            <div class="account-actions">
+                <button class="account-button" type="submit">Entrar</button>
+                <button class="account-link-button" id="showSetup" type="button">Criar ou redefinir senha</button>
+                <button class="account-link-button" id="showRecover" type="button">Não sei meu número de cadastro</button>
+            </div>
+        </form>
+    </section>
+    <section id="recoverPanel" class="account-card" hidden>
+        <h2>Localizar número de cadastro</h2><p class="account-note">Use o telefone e a data de nascimento informados na inscrição.</p>
+        <form id="recoverForm"><div class="account-form-grid">
+            <div class="account-field"><label for="recoverPhone">Telefone da inscrição</label><input id="recoverPhone" name="telefone" type="tel" autocomplete="tel" required></div>
+            <div class="account-field"><label for="recoverBirth">Data de nascimento</label><input id="recoverBirth" name="data_nascimento" type="date" required></div>
+        </div><div class="account-actions"><button class="account-button" type="submit">Localizar cadastro</button></div></form>
+    </section>
+    <section id="setupPanel" class="account-card" hidden>
+        <h2>Criar ou redefinir senha</h2><p class="account-note">Confirme os dados da inscrição e escolha uma senha numérica com pelo menos 6 dígitos.</p>
+        <form id="setupForm"><div class="account-form-grid">
+            <div class="account-field"><label for="setupNumber">Número de cadastro</label><input id="setupNumber" name="numero_cadastro" inputmode="numeric" pattern="[0-9]{11}" maxlength="11" required><select id="foundNumbers" class="account-hidden" aria-label="Selecione o cadastro encontrado"></select></div>
+            <div class="account-field"><label for="setupPhone">Telefone da inscrição</label><input id="setupPhone" name="telefone" type="tel" autocomplete="tel" required></div>
+            <div class="account-field"><label for="setupBirth">Data de nascimento</label><input id="setupBirth" name="data_nascimento" type="date" required></div>
+            <div class="account-field"><label for="setupPassword">Nova senha (mínimo 6 dígitos)</label><input id="setupPassword" name="senha" type="password" inputmode="numeric" pattern="[0-9]{6,64}" minlength="6" maxlength="64" autocomplete="new-password" required></div>
+            <div class="account-field"><label for="confirmPassword">Confirme a senha</label><input id="confirmPassword" name="confirmar_senha" type="password" inputmode="numeric" pattern="[0-9]{6,64}" minlength="6" maxlength="64" autocomplete="new-password" required></div>
+        </div><div class="account-actions"><button class="account-button" type="submit">Salvar senha</button></div></form>
+    </section>
+    <div id="profilePanel" hidden>
+        <section class="account-card">
+            <div class="account-actions" style="justify-content:space-between;margin-top:0"><h2>Contrato de inscrição</h2><button class="account-button secondary" id="logout" type="button">Sair</button></div>
+            <dl id="contractDetails" class="account-contract-list"></dl>
+            <div class="account-actions"><button class="account-button" id="downloadContract" type="button">Baixar contrato atualizado</button></div>
+        </section>
+        <section class="account-card">
+            <h2>Alterar minha senha</h2>
+            <form id="passwordForm"><div class="account-form-grid">
+                <div class="account-field"><label for="newPassword">Nova senha (mínimo 6 dígitos)</label><input id="newPassword" name="nova_senha" type="password" inputmode="numeric" pattern="[0-9]{6,64}" minlength="6" maxlength="64" autocomplete="new-password" required></div>
+                <div class="account-field"><label for="confirmNewPassword">Confirme a nova senha</label><input id="confirmNewPassword" name="confirmar_nova_senha" type="password" inputmode="numeric" pattern="[0-9]{6,64}" minlength="6" maxlength="64" autocomplete="new-password" required></div>
+            </div><div class="account-actions"><button class="account-button" type="submit">Alterar senha</button></div></form>
+        </section>
+        <section class="account-card">
+            <h2>Atualizar minha ficha</h2><p class="account-note">A idade e a turma são recalculadas pela data de nascimento. Se você for menor de 18 anos, responsável e contato de emergência são obrigatórios.</p>
+            <form id="editForm"><div class="account-form-grid">
+                <div class="account-field"><label for="editName">Nome completo</label><input id="editName" name="nome" maxlength="150" autocomplete="name" required></div>
+                <div class="account-field"><label for="editBirth">Data de nascimento</label><input id="editBirth" name="data_nascimento" type="date" required></div>
+                <div class="account-field"><label for="editType">Tipo de inscrição</label><select id="editType" name="tipo_inscricao" required><option value="aluno">Aluno</option><option value="instrutor">Instrutor Elite</option></select></div>
+                <div id="instructorFields" class="account-form-grid account-full" hidden>
+                    <div class="account-field"><label for="editClass">Turma de aula</label><select id="editClass" name="turma_aula"><option value="">Selecione</option><option>Baby Thai</option><option>Kids</option><option>Juvenil / Adulto</option><option>A definir</option></select></div>
+                    <div class="account-field"><label for="editPeriod">Horário de treino</label><select id="editPeriod" name="periodo"><option value="">Selecione</option><option>Manhã</option><option>Tarde</option><option>Noite</option><option>A definir</option></select></div>
+                    <div class="account-field"><label for="editSchedule">Horário da aula</label><input id="editSchedule" name="horario" maxlength="100"></div>
+                    <label id="teacherAuthorization" class="account-check account-full" hidden><input name="autorizacao_instrutor" type="checkbox"><span>Confirmo que tenho autorização do professor para a inscrição como Instrutor Elite.</span></label>
+                </div>
+                <div id="guardianFields" class="account-form-grid account-full" hidden>
+                    <h3 class="account-full">Responsável e contato de emergência</h3>
+                    <div class="account-field"><label for="guardianName">Nome do responsável</label><input id="guardianName" name="resp_nome" maxlength="150"></div>
+                    <div class="account-field"><label for="guardianRelation">Parentesco</label><input id="guardianRelation" name="resp_parentesco" maxlength="100"></div>
+                    <div class="account-field"><label for="guardianPhone">Telefone do responsável</label><input id="guardianPhone" name="resp_telefone" type="tel" maxlength="30"></div>
+                    <div class="account-field"><label for="emergencyName">Nome do contato de emergência</label><input id="emergencyName" name="emerg_nome" maxlength="150"></div>
+                    <div class="account-field"><label for="emergencyRelation">Parentesco</label><input id="emergencyRelation" name="emerg_parentesco" maxlength="100"></div>
+                    <div class="account-field"><label for="emergencyPhone">Telefone de emergência</label><input id="emergencyPhone" name="emerg_telefone" type="tel" maxlength="30"></div>
+                </div>
+                <fieldset class="account-card account-full"><legend>Saúde e condições físicas</legend><p class="account-note">Essas informações são privadas e usadas pela equipe para segurança e adaptação do treino.</p><div id="healthFields"></div></fieldset>
+                <div class="account-field account-full"><label for="adaptations">Adaptações ou observações</label><textarea id="adaptations" name="adaptacoes" maxlength="2000"></textarea></div>
+            </div><div class="account-actions"><button class="account-button" type="submit">Salvar alterações</button></div></form>
+        </section>
+    </div>
+</main>
+<script src="../js/ficha.js" defer></script>
+</body>
+</html>
