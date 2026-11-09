@@ -1405,6 +1405,10 @@ footer::before {
     gap: 16px;
 }
 
+.feedback-email-only {
+    grid-template-columns: minmax(0, 1fr);
+}
+
 .feedback-form label,
 .feedback-rating legend {
     display: block;

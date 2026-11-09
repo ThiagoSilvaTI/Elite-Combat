@@ -66,21 +66,71 @@ if (!colunasInscricao.has('turma_aula')) {
 
 db.exec(`
   CREATE TABLE IF NOT EXISTS feedbacks (
-    numero_cadastro TEXT PRIMARY KEY,
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    numero_cadastro TEXT,
+    email TEXT,
     nota INTEGER NOT NULL CHECK (nota BETWEEN 1 AND 5),
     recomendacao TEXT NOT NULL,
-    email TEXT,
     criado_em TEXT NOT NULL DEFAULT (datetime('now')),
     atualizado_em TEXT NOT NULL DEFAULT (datetime('now'))
   );
 `);
 
-const colunasFeedback = new Set(
-  db.prepare('PRAGMA table_info(feedbacks)').all().map((coluna) => coluna.name)
+const colunasFeedback = db.prepare('PRAGMA table_info(feedbacks)').all();
+const usaCadastroComoChave = colunasFeedback.some(
+  (coluna) => coluna.name === 'numero_cadastro' && coluna.pk > 0
 );
-if (!colunasFeedback.has('email')) {
-  db.exec('ALTER TABLE feedbacks ADD COLUMN email TEXT');
+if (usaCadastroComoChave) {
+  const possuiEmail = colunasFeedback.some((coluna) => coluna.name === 'email');
+  const feedbacksAntigos = db.prepare(`
+    SELECT numero_cadastro, nota, recomendacao,
+           ${possuiEmail ? 'email' : 'NULL AS email'},
+           criado_em, atualizado_em
+    FROM feedbacks
+    ORDER BY atualizado_em DESC, criado_em DESC
+  `).all();
+  const migrarFeedbacks = db.transaction((linhas) => {
+    db.exec('ALTER TABLE feedbacks RENAME TO feedbacks_por_cadastro');
+    db.exec(`
+      CREATE TABLE feedbacks (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        numero_cadastro TEXT,
+        email TEXT,
+        nota INTEGER NOT NULL CHECK (nota BETWEEN 1 AND 5),
+        recomendacao TEXT NOT NULL,
+        criado_em TEXT NOT NULL DEFAULT (datetime('now')),
+        atualizado_em TEXT NOT NULL DEFAULT (datetime('now'))
+      );
+    `);
+    const inserir = db.prepare(`
+      INSERT INTO feedbacks (numero_cadastro, email, nota, recomendacao, criado_em, atualizado_em)
+      VALUES (?, ?, ?, ?, ?, ?)
+    `);
+    const emailsVistos = new Set();
+    for (const linha of linhas) {
+      const email = String(linha.email || '').trim() || null;
+      const chaveEmail = email ? email.toLocaleLowerCase('en-US') : null;
+      if (chaveEmail && emailsVistos.has(chaveEmail)) continue;
+      if (chaveEmail) emailsVistos.add(chaveEmail);
+      inserir.run(
+        linha.numero_cadastro,
+        email,
+        linha.nota,
+        linha.recomendacao,
+        linha.criado_em,
+        linha.atualizado_em
+      );
+    }
+    db.exec('DROP TABLE feedbacks_por_cadastro');
+  });
+  migrarFeedbacks(feedbacksAntigos);
 }
+
+db.exec(`
+  CREATE UNIQUE INDEX IF NOT EXISTS idx_feedbacks_email
+  ON feedbacks(email COLLATE NOCASE)
+  WHERE email IS NOT NULL;
+`);
 
 function normalizarTelefone(valor) {
   const digits = String(valor || '').replace(/\D/g, '');
@@ -178,10 +228,10 @@ app.get('/api/preferencia', (req, res) => {
 app.get('/api/feedback', (req, res) => {
   try {
     const feedbacks = db.prepare(`
-      SELECT COALESCE(f.email, i.nome) AS email, f.nota, f.recomendacao, f.atualizado_em
-      FROM feedbacks f
-      JOIN inscricoes i ON i.numero_cadastro = f.numero_cadastro
-      ORDER BY f.atualizado_em DESC
+      SELECT email, nota, recomendacao, atualizado_em
+      FROM feedbacks
+      WHERE email IS NOT NULL
+      ORDER BY atualizado_em DESC
       LIMIT 50
     `).all();
     return res.json({ ok: true, feedbacks });
@@ -193,19 +243,11 @@ app.get('/api/feedback', (req, res) => {
 
 app.post('/api/feedback', (req, res) => {
   try {
-    const numero = String(req.body?.numero_cadastro || '').trim();
-    const telefone = String(req.body?.telefone || '').trim();
     const email = String(req.body?.email || '').trim();
     const recomendacao = String(req.body?.recomendacao || '').trim();
     const nota = Number(req.body?.nota);
     const consentimento = req.body?.consentimento === true;
 
-    if (!/^\d{11}$/.test(numero) || !/^[\d\s()+-]{10,20}$/.test(telefone)) {
-      return res.status(400).json({
-        ok: false,
-        erro: 'Informe um número de cadastro válido e o telefone usado na inscrição.',
-      });
-    }
     if (email.length > 254 || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
       return res.status(400).json({ ok: false, erro: 'Informe um endereço de e-mail válido.' });
     }
@@ -225,25 +267,21 @@ app.post('/api/feedback', (req, res) => {
       });
     }
 
-    const inscricao = db.prepare(
-      'SELECT nome, telefone FROM inscricoes WHERE numero_cadastro = ?'
-    ).get(numero);
-    if (!inscricao || normalizarTelefone(inscricao.telefone) !== normalizarTelefone(telefone)) {
-      return res.status(404).json({
-        ok: false,
-        erro: 'Não encontramos uma inscrição com esses dados. Confira o número de cadastro e o telefone.',
-      });
+    const emailExistente = db.prepare(
+      'SELECT id FROM feedbacks WHERE email = ? COLLATE NOCASE'
+    ).get(email);
+    if (emailExistente) {
+      db.prepare(`
+        UPDATE feedbacks
+        SET email = ?, nota = ?, recomendacao = ?, atualizado_em = datetime('now')
+        WHERE id = ?
+      `).run(email, nota, recomendacao, emailExistente.id);
+    } else {
+      db.prepare(`
+        INSERT INTO feedbacks (email, nota, recomendacao)
+        VALUES (?, ?, ?)
+      `).run(email, nota, recomendacao);
     }
-
-    db.prepare(`
-      INSERT INTO feedbacks (numero_cadastro, nota, recomendacao, email)
-      VALUES (?, ?, ?, ?)
-      ON CONFLICT(numero_cadastro) DO UPDATE SET
-        nota = excluded.nota,
-        recomendacao = excluded.recomendacao,
-        email = excluded.email,
-        atualizado_em = datetime('now')
-    `).run(numero, nota, recomendacao, email);
 
     return res.json({
       ok: true,

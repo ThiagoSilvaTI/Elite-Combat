@@ -90,20 +90,12 @@
             <h2 class="section-title">Feedback dos <span>Alunos</span></h2>
             <div class="section-number">05</div>
         </div>
-        <p class="feedback-intro">Já se inscreveu? Confirme seu número de cadastro e telefone para avaliar o site. Sua nota e recomendação serão publicadas com o e-mail informado; um novo envio atualiza sua avaliação.</p>
+        <p class="feedback-intro">Avalie o site usando seu e-mail para identificação. Sua nota e recomendação serão publicadas com o e-mail informado; um novo envio atualiza sua avaliação.</p>
 
         <form class="feedback-form" id="feedbackForm">
-            <div class="feedback-credentials">
+            <div class="feedback-credentials feedback-email-only">
                 <div>
-                    <label for="feedbackNumero">Número de cadastro</label>
-                    <input type="text" id="feedbackNumero" name="numero_cadastro" inputmode="numeric" pattern="[0-9]{11}" maxlength="11" autocomplete="off" placeholder="Número de 11 dígitos" required>
-                </div>
-                <div>
-                    <label for="feedbackTelefone">Telefone da inscrição</label>
-                    <input type="tel" id="feedbackTelefone" name="telefone" autocomplete="tel" placeholder="(99) 99999-9999" required>
-                </div>
-                <div>
-                    <label for="feedbackEmail">E-mail que será exibido no feedback</label>
+                    <label for="feedbackEmail">Seu e-mail</label>
                     <input type="email" id="feedbackEmail" name="email" maxlength="254" autocomplete="email" placeholder="seu@email.com" required>
                 </div>
             </div>

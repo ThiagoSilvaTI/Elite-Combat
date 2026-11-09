@@ -77,8 +77,6 @@
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
-                    numero_cadastro: form.elements.numero_cadastro.value,
-                    telefone: form.elements.telefone.value,
                     email: form.elements.email.value,
                     nota: Number(form.elements.nota.value),
                     recomendacao: form.elements.recomendacao.value,
