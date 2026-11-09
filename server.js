@@ -685,7 +685,14 @@ function exigirAdmin(req, res, next) {
 
 // Página HTML do admin
 app.get('/admin', exigirAdmin, (req, res) => {
+  if (ehDispositivoMovel(req)) {
+    return res.redirect('/admin/mobile');
+  }
   res.sendFile(path.join(__dirname, 'public', 'admin.html'));
+});
+
+app.get('/admin/mobile', exigirAdmin, (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'admin-mobile.html'));
 });
 
 app.get('/api/admin/feedback', exigirAdmin, (req, res) => {
