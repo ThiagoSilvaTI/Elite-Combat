@@ -2,9 +2,7 @@ const express = require('express');
 const path = require('path');
 const fs = require('fs');
 const crypto = require('crypto');
-const { promisify } = require('util');
 const Database = require('better-sqlite3');
-const scrypt = promisify(crypto.scrypt);
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -39,8 +37,6 @@ db.exec(`
     objetivo      TEXT,
     tipo_inscricao TEXT NOT NULL DEFAULT 'aluno',
     autorizacao_instrutor INTEGER NOT NULL DEFAULT 0,
-    senha_salt   TEXT,
-    senha_hash   TEXT,
     resp_nome     TEXT,
     resp_parentesco TEXT,
     resp_telefone TEXT,
@@ -67,12 +63,6 @@ if (!colunasInscricao.has('autorizacao_instrutor')) {
 if (!colunasInscricao.has('turma_aula')) {
   db.exec('ALTER TABLE inscricoes ADD COLUMN turma_aula TEXT');
 }
-if (!colunasInscricao.has('senha_salt')) {
-  db.exec('ALTER TABLE inscricoes ADD COLUMN senha_salt TEXT');
-}
-if (!colunasInscricao.has('senha_hash')) {
-  db.exec('ALTER TABLE inscricoes ADD COLUMN senha_hash TEXT');
-}
 
 db.exec(`
   CREATE TABLE IF NOT EXISTS feedbacks (
@@ -89,95 +79,6 @@ function normalizarTelefone(valor) {
   return digits.startsWith('55') && (digits.length === 12 || digits.length === 13)
     ? digits.slice(2)
     : digits;
-}
-
-function calcularIdade(dataNascimento) {
-  if (!/^\d{4}-\d{2}-\d{2}$/.test(String(dataNascimento || ''))) return null;
-  const nascimento = new Date(`${dataNascimento}T00:00:00Z`);
-  if (Number.isNaN(nascimento.getTime()) || nascimento.toISOString().slice(0, 10) !== dataNascimento) {
-    return null;
-  }
-  const hoje = new Date();
-  let idade = hoje.getUTCFullYear() - nascimento.getUTCFullYear();
-  if (
-    hoje.getUTCMonth() < nascimento.getUTCMonth() ||
-    (hoje.getUTCMonth() === nascimento.getUTCMonth() &&
-      hoje.getUTCDate() < nascimento.getUTCDate())
-  ) {
-    idade--;
-  }
-  return idade;
-}
-
-function turmaPorIdade(idade) {
-  return idade < 7 ? 'Baby Thai (4 a 6 anos)' :
-    idade < 14 ? 'Kids (7 a 13 anos)' : 'Juvenil / Adulto (14+)';
-}
-
-function montarDadosContrato(row, saude = null) {
-  const dadosSaude = saude || (row.saude_json ? JSON.parse(row.saude_json) : {});
-  return {
-    ...row,
-    saude: dadosSaude,
-    adaptacoes: row.adaptacoes || 'Nenhuma informada',
-    emerg_nome: row.emerg_nome || 'Não informado',
-    emerg_telefone: row.emerg_telefone || 'Não informado',
-    periodo: row.periodo || 'A definir',
-    horario: row.horario || 'A definir',
-    turma_aula: row.turma_aula || 'A definir',
-  };
-}
-
-const tentativasAcessoFicha = new Map();
-function limitarAcessoFicha(req, res, next) {
-  const agora = Date.now();
-  res.setHeader('Cache-Control', 'no-store');
-  const ip = req.socket.remoteAddress || 'unknown';
-  const identificador = String(
-    req.body?.numero_cadastro || normalizarTelefone(req.body?.telefone) || 'sem-identificador'
-  );
-  const chaves = [
-    { chave: `${ip}:${req.path}`, limite: 100 },
-    { chave: `${ip}:${req.path}:${identificador}`, limite: 10 },
-  ];
-  const janela = 15 * 60 * 1000;
-  for (const { chave, limite } of chaves) {
-    const atual = tentativasAcessoFicha.get(chave);
-    if (atual && agora - atual.inicio < janela && atual.quantidade >= limite) {
-      res.setHeader('Retry-After', String(Math.ceil((janela - (agora - atual.inicio)) / 1000)));
-      return res.status(429).json({
-        ok: false,
-        erro: 'Muitas tentativas. Aguarde alguns minutos e tente novamente.',
-      });
-    }
-  }
-  for (const { chave } of chaves) {
-    const atual = tentativasAcessoFicha.get(chave);
-    if (!atual || agora - atual.inicio >= janela) {
-      tentativasAcessoFicha.set(chave, { inicio: agora, quantidade: 1 });
-    } else {
-      atual.quantidade++;
-    }
-  }
-  if (tentativasAcessoFicha.size > 10000) {
-    for (const [ip, tentativa] of tentativasAcessoFicha) {
-      if (agora - tentativa.inicio >= janela) tentativasAcessoFicha.delete(ip);
-    }
-  }
-  return next();
-}
-
-async function criarHashSenha(senha) {
-  const salt = crypto.randomBytes(16);
-  const hash = await scrypt(senha, salt, 64);
-  return { salt: salt.toString('hex'), hash: hash.toString('hex') };
-}
-
-async function validarSenha(senha, saltHex, hashHex) {
-  if (!saltHex || !hashHex) return false;
-  const esperado = Buffer.from(hashHex, 'hex');
-  const recebido = await scrypt(senha, Buffer.from(saltHex, 'hex'), esperado.length);
-  return esperado.length === recebido.length && crypto.timingSafeEqual(esperado, recebido);
 }
 
 // ================== DETECÇÃO DE DISPOSITIVO ==================
@@ -368,10 +269,14 @@ app.post('/api/inscricao', (req, res) => {
       }
     }
 
-    const idade = calcularIdade(String(b.data_nascimento || ''));
-    if (idade === null) {
+    const nasc = new Date(b.data_nascimento);
+    if (isNaN(nasc.getTime())) {
       return res.status(400).json({ ok: false, erro: 'Data de nascimento inválida.' });
     }
+    const hoje = new Date();
+    let idade = hoje.getFullYear() - nasc.getFullYear();
+    const m = hoje.getMonth() - nasc.getMonth();
+    if (m < 0 || (m === 0 && hoje.getDate() < nasc.getDate())) idade--;
     if (idade < 4) {
       return res.status(400).json({ ok: false, erro: 'A idade mínima para inscrição é 4 anos.' });
     }
@@ -379,7 +284,8 @@ app.post('/api/inscricao', (req, res) => {
       return res.status(400).json({ ok: false, erro: 'Idade fora do intervalo permitido.' });
     }
 
-    const turma = turmaPorIdade(idade);
+    const turma = idade < 7 ? 'Baby Thai (4 a 6 anos)' :
+      idade < 14 ? 'Kids (7 a 13 anos)' : 'Juvenil / Adulto (14+)';
     const tipo_inscricao = b.tipo_inscricao || 'aluno';
     if (!['aluno', 'instrutor'].includes(tipo_inscricao)) {
       return res.status(400).json({ ok: false, erro: 'Tipo de inscrição inválido.' });
@@ -542,10 +448,6 @@ app.post('/api/inscricao', (req, res) => {
 // ---- Rota: baixar contrato ----
 app.get('/api/contrato/:numero', (req, res) => {
   const { numero } = req.params;
-  if (!credenciaisAdminValidas(req)) {
-    res.setHeader('WWW-Authenticate', 'Basic realm="Elite Combat Admin"');
-    return res.status(401).send('Acesse sua ficha para consultar o contrato.');
-  }
   const row = db
     .prepare('SELECT contrato_path FROM inscricoes WHERE numero_cadastro = ?')
     .get(numero);
@@ -656,23 +558,16 @@ function gerarContrato(d) {
   } else {
     linhas.push(`Período .................: ${d.periodo}`);
     linhas.push(`Horário .................: ${d.horario}`);
-    linhas.push(`Já praticou Muay Thai ..: ${d.ja_muaythai || 'Não informado'}`);
-    linhas.push(`Praticou outra arte .....: ${d.ja_outra_arte || 'Não informado'}`);
-    linhas.push(`Modalidade ..............: ${d.modalidade || 'Não informado'}`);
-    linhas.push(`Tempo de prática ........: ${d.tempo_pratica || 'Não informado'}`);
-    linhas.push(`Objetivo ................: ${d.objetivo || 'Não informado'}`);
   }
   if (d.resp_nome) {
     linhas.push('');
     linhas.push('--------- RESPONSÁVEL LEGAL (menor de 18) -------');
     linhas.push(`Nome ....................: ${d.resp_nome}`);
-    linhas.push(`Parentesco ..............: ${d.resp_parentesco || 'Não informado'}`);
     linhas.push(`Telefone ................: ${d.resp_telefone}`);
   }
   linhas.push('');
   linhas.push('--------- CONTATO DE EMERGÊNCIA ---------');
   linhas.push(`Nome ....................: ${d.emerg_nome}`);
-  linhas.push(`Parentesco ..............: ${d.emerg_parentesco || 'Não informado'}`);
   linhas.push(`Telefone ................: ${d.emerg_telefone}`);
   linhas.push('');
   linhas.push('--------- SAÚDE E ADAPTAÇÕES ---------');
@@ -715,319 +610,26 @@ function gerarContrato(d) {
   return linhas.join('\n');
 }
 
-function dadosPublicosFicha(row) {
-  let saude = {};
-  try {
-    saude = row.saude_json ? JSON.parse(row.saude_json) : {};
-  } catch (err) {
-    console.error('Erro ao ler dados de saúde da ficha:', err);
-    throw new Error('Não foi possível ler os dados da ficha.');
-  }
-  const {
-    senha_salt,
-    senha_hash,
-    contrato_path,
-    ...dados
-  } = row;
-  return {
-    ...dados,
-    saude,
-    autorizacao_instrutor: !!row.autorizacao_instrutor,
-    contrato_disponivel: !!(contrato_path && fs.existsSync(contrato_path)),
-  };
-}
-
-function validarSaudeFicha(saude) {
-  if (!saude || typeof saude !== 'object' || Array.isArray(saude)) return null;
-  const resultado = {};
-  for (let i = 1; i <= 8; i++) {
-    const chave = `q${i}`;
-    if (!['sim', 'nao'].includes(saude[chave])) return null;
-    resultado[chave] = saude[chave];
-    if (saude[chave] === 'sim') {
-      const detalhe = String(saude[`${chave}_detalhe`] || '').trim();
-      if (!detalhe || detalhe.length > 1000) return null;
-      resultado[`${chave}_detalhe`] = detalhe;
-    }
-  }
-  return resultado;
-}
-
-function textoFicha(valor, maximo = 200) {
-  const texto = String(valor || '').trim();
-  return texto.length <= maximo ? texto : null;
-}
-
-app.post('/api/ficha/recuperar-cadastro', limitarAcessoFicha, (req, res) => {
-  const telefone = String(req.body?.telefone || '').trim();
-  const nascimento = String(req.body?.data_nascimento || '').trim();
-  if (!/^[\d\s()+-]{10,20}$/.test(telefone) || calcularIdade(nascimento) === null) {
-    return res.status(400).json({ ok: false, erro: 'Informe telefone e data de nascimento válidos.' });
-  }
-  const candidatos = db.prepare(
-    'SELECT numero_cadastro, nome, telefone FROM inscricoes WHERE data_nascimento = ?'
-  ).all(nascimento).filter((row) =>
-    normalizarTelefone(row.telefone) === normalizarTelefone(telefone)
-  );
-  if (!candidatos.length) {
-    return res.status(404).json({
-      ok: false,
-      erro: 'Não encontramos uma ficha com esses dados. Confira as informações ou fale com a academia.',
-    });
-  }
-  return res.json({
-    ok: true,
-    fichas: candidatos.map(({ numero_cadastro, nome }) => ({ numero_cadastro, nome })),
-  });
-});
-
-app.post('/api/ficha/definir-senha', limitarAcessoFicha, async (req, res) => {
-  try {
-    const numero = String(req.body?.numero_cadastro || '').trim();
-    const telefone = String(req.body?.telefone || '').trim();
-    const nascimento = String(req.body?.data_nascimento || '').trim();
-    const senha = String(req.body?.senha || '');
-    if (!/^\d{11}$/.test(numero) || !/^[\d\s()+-]{10,20}$/.test(telefone) ||
-        calcularIdade(nascimento) === null || !/^\d{6,64}$/.test(senha)) {
-      return res.status(400).json({
-        ok: false,
-        erro: 'Confira o cadastro, telefone, data de nascimento e senha (mínimo de 6 dígitos).',
-      });
-    }
-    const row = db.prepare(
-      'SELECT numero_cadastro, telefone, data_nascimento FROM inscricoes WHERE numero_cadastro = ?'
-    ).get(numero);
-    if (!row || row.data_nascimento !== nascimento ||
-        normalizarTelefone(row.telefone) !== normalizarTelefone(telefone)) {
-      return res.status(404).json({
-        ok: false,
-        erro: 'Não encontramos uma ficha com esses dados. Confira as informações.',
-      });
-    }
-    const credencial = await criarHashSenha(senha);
-    db.prepare('UPDATE inscricoes SET senha_salt = ?, senha_hash = ? WHERE numero_cadastro = ?')
-      .run(credencial.salt, credencial.hash, numero);
-    return res.json({ ok: true, mensagem: 'Senha cadastrada. Agora você já pode entrar na sua ficha.' });
-  } catch (err) {
-    console.error('Erro ao definir senha da ficha:', err);
-    return res.status(500).json({ ok: false, erro: 'Não foi possível cadastrar a senha.' });
-  }
-});
-
-app.post('/api/ficha/entrar', limitarAcessoFicha, async (req, res) => {
-  try {
-    const numero = String(req.body?.numero_cadastro || '').trim();
-    const senha = String(req.body?.senha || '');
-    if (!/^\d{11}$/.test(numero) || !/^\d{6,64}$/.test(senha)) {
-      return res.status(401).json({ ok: false, erro: 'Cadastro ou senha incorretos.' });
-    }
-    const row = db.prepare('SELECT * FROM inscricoes WHERE numero_cadastro = ?').get(numero);
-    if (!row || !(await validarSenha(senha, row.senha_salt, row.senha_hash))) {
-      return res.status(401).json({ ok: false, erro: 'Cadastro ou senha incorretos.' });
-    }
-    return res.json({ ok: true, ficha: dadosPublicosFicha(row) });
-  } catch (err) {
-    console.error('Erro ao entrar na ficha:', err);
-    return res.status(500).json({ ok: false, erro: 'Não foi possível carregar sua ficha.' });
-  }
-});
-
-app.post('/api/ficha/contrato', limitarAcessoFicha, async (req, res) => {
-  try {
-    const numero = String(req.body?.numero_cadastro || '').trim();
-    const senha = String(req.body?.senha || '');
-    if (!/^\d{11}$/.test(numero) || !/^\d{6,64}$/.test(senha)) {
-      return res.status(401).json({ ok: false, erro: 'Cadastro ou senha incorretos.' });
-    }
-    const row = db.prepare('SELECT * FROM inscricoes WHERE numero_cadastro = ?').get(numero);
-    if (!row || !(await validarSenha(senha, row.senha_salt, row.senha_hash))) {
-      return res.status(401).json({ ok: false, erro: 'Cadastro ou senha incorretos.' });
-    }
-    if (!row.contrato_path || !fs.existsSync(row.contrato_path)) {
-      return res.status(404).json({ ok: false, erro: 'Contrato não encontrado.' });
-    }
-    res.setHeader('Cache-Control', 'no-store');
-    return res.download(row.contrato_path, `contrato_${numero}.txt`, (err) => {
-      if (err && !res.headersSent) {
-        console.error('Erro ao baixar contrato:', err);
-        res.status(500).json({ ok: false, erro: 'Não foi possível baixar o contrato.' });
-      }
-    });
-  } catch (err) {
-    console.error('Erro ao validar acesso ao contrato:', err);
-    return res.status(500).json({ ok: false, erro: 'Não foi possível baixar o contrato.' });
-  }
-});
-
-app.put('/api/ficha/senha', limitarAcessoFicha, async (req, res) => {
-  try {
-    const numero = String(req.body?.numero_cadastro || '').trim();
-    const senhaAtual = String(req.body?.senha_atual || '');
-    const novaSenha = String(req.body?.nova_senha || '');
-    if (!/^\d{11}$/.test(numero) || !/^\d{6,64}$/.test(senhaAtual) ||
-        !/^\d{6,64}$/.test(novaSenha)) {
-      return res.status(400).json({ ok: false, erro: 'A senha deve conter pelo menos 6 dígitos.' });
-    }
-    const row = db.prepare(
-      'SELECT senha_salt, senha_hash FROM inscricoes WHERE numero_cadastro = ?'
-    ).get(numero);
-    if (!row || !(await validarSenha(senhaAtual, row.senha_salt, row.senha_hash))) {
-      return res.status(401).json({ ok: false, erro: 'Senha atual incorreta.' });
-    }
-    const credencial = await criarHashSenha(novaSenha);
-    db.prepare('UPDATE inscricoes SET senha_salt = ?, senha_hash = ? WHERE numero_cadastro = ?')
-      .run(credencial.salt, credencial.hash, numero);
-    return res.json({ ok: true, mensagem: 'Senha alterada com sucesso.' });
-  } catch (err) {
-    console.error('Erro ao alterar senha da ficha:', err);
-    return res.status(500).json({ ok: false, erro: 'Não foi possível alterar a senha.' });
-  }
-});
-
-app.put('/api/ficha', limitarAcessoFicha, async (req, res) => {
-  let arquivoTemporario;
-  try {
-    const numero = String(req.body?.numero_cadastro || '').trim();
-    const senha = String(req.body?.senha || '');
-    if (!/^\d{11}$/.test(numero) || !/^\d{6,64}$/.test(senha)) {
-      return res.status(401).json({ ok: false, erro: 'Cadastro ou senha incorretos.' });
-    }
-    const atual = db.prepare('SELECT * FROM inscricoes WHERE numero_cadastro = ?').get(numero);
-    if (!atual || !(await validarSenha(senha, atual.senha_salt, atual.senha_hash))) {
-      return res.status(401).json({ ok: false, erro: 'Cadastro ou senha incorretos.' });
-    }
-
-    const b = req.body || {};
-    const nome = textoFicha(b.nome, 150);
-    const idade = calcularIdade(String(b.data_nascimento || ''));
-    const tipo = String(b.tipo_inscricao || '');
-    const saude = validarSaudeFicha(b.saude);
-    const adaptacoes = textoFicha(b.adaptacoes, 2000);
-    if (!nome || nome.length < 2 || idade === null || idade < 4 || idade > 120 ||
-        !['aluno', 'instrutor'].includes(tipo) || !saude || adaptacoes === null) {
-      return res.status(400).json({
-        ok: false,
-        erro: 'Confira nome, data de nascimento, tipo de inscrição e informações de saúde.',
-      });
-    }
-
-    const menor = idade < 18;
-    const respNome = menor ? textoFicha(b.resp_nome, 150) : null;
-    const respParentesco = menor ? textoFicha(b.resp_parentesco, 100) : null;
-    const respTelefone = menor ? textoFicha(b.resp_telefone, 30) : null;
-    const emergNome = menor ? textoFicha(b.emerg_nome, 150) : '';
-    const emergParentesco = menor ? textoFicha(b.emerg_parentesco, 100) : null;
-    const emergTelefone = menor ? textoFicha(b.emerg_telefone, 30) : '';
-    if (menor && (!respNome || !respTelefone || !emergNome || !emergTelefone)) {
-      return res.status(400).json({
-        ok: false,
-        erro: 'Responsável e contato de emergência são obrigatórios para menores de 18 anos.',
-      });
-    }
-    if (menor && normalizarTelefone(emergTelefone) === normalizarTelefone(atual.telefone)) {
-      return res.status(400).json({
-        ok: false,
-        erro: 'O telefone de emergência não pode ser igual ao telefone do aluno.',
-      });
-    }
-
-    const autorizacaoInstrutor = tipo === 'instrutor' &&
-      (Boolean(atual.autorizacao_instrutor) ||
-        (atual.tipo_inscricao !== 'instrutor' && b.autorizacao_instrutor === true));
-    if (tipo === 'instrutor' && !autorizacaoInstrutor) {
-      return res.status(400).json({
-        ok: false,
-        erro: 'Confirme a autorização do professor para a inscrição como Instrutor Elite.',
-      });
-    }
-    let turmaAula = atual.turma_aula;
-    let periodo = atual.periodo;
-    let horario = atual.horario;
-    if (tipo === 'instrutor') {
-      const periodosValidos = ['Manhã', 'Tarde', 'Noite', 'A definir'];
-      const turmasValidas = ['Baby Thai', 'Kids', 'Juvenil / Adulto', 'A definir'];
-      turmaAula = String(b.turma_aula || '');
-      periodo = String(b.periodo || '');
-      horario = textoFicha(b.horario, 100);
-      if (!turmasValidas.includes(turmaAula) || !periodosValidos.includes(periodo) || !horario) {
-        return res.status(400).json({
-          ok: false,
-          erro: 'Informe a turma de aula, o horário de treino e o horário da aula.',
-        });
-      }
-    }
-
-    const atualizado = {
-      ...atual,
-      nome,
-      data_nascimento: b.data_nascimento,
-      idade,
-      turma: turmaPorIdade(idade),
-      tipo_inscricao: tipo,
-      autorizacao_instrutor: autorizacaoInstrutor ? 1 : 0,
-      turma_aula: tipo === 'instrutor' ? turmaAula : null,
-      periodo: tipo === 'instrutor' ? periodo : atual.periodo,
-      horario: tipo === 'instrutor' ? horario : atual.horario,
-      resp_nome: respNome,
-      resp_parentesco: respParentesco,
-      resp_telefone: respTelefone,
-      emerg_nome: emergNome,
-      emerg_parentesco: emergParentesco,
-      emerg_telefone: emergTelefone,
-      saude_json: JSON.stringify(saude),
-      adaptacoes,
-    };
-    const contratoPath = path.join(CONTRATOS_DIR, `contrato_${numero}.txt`);
-    arquivoTemporario = `${contratoPath}.tmp-${crypto.randomBytes(8).toString('hex')}`;
-    fs.writeFileSync(arquivoTemporario, gerarContrato(montarDadosContrato(atualizado, saude)), 'utf-8');
-    const atualizarFicha = db.transaction(() => {
-      db.prepare(`
-        UPDATE inscricoes SET
-          nome = @nome, data_nascimento = @data_nascimento, idade = @idade, turma = @turma,
-          tipo_inscricao = @tipo_inscricao, autorizacao_instrutor = @autorizacao_instrutor,
-          turma_aula = @turma_aula, periodo = @periodo, horario = @horario,
-          resp_nome = @resp_nome, resp_parentesco = @resp_parentesco, resp_telefone = @resp_telefone,
-          emerg_nome = @emerg_nome, emerg_parentesco = @emerg_parentesco, emerg_telefone = @emerg_telefone,
-          saude_json = @saude_json, adaptacoes = @adaptacoes, contrato_path = @contrato_path
-        WHERE numero_cadastro = @numero_cadastro
-      `).run({ ...atualizado, contrato_path: contratoPath, numero_cadastro: numero });
-      fs.renameSync(arquivoTemporario, contratoPath);
-      arquivoTemporario = null;
-    });
-    atualizarFicha();
-    const fichaAtualizada = db.prepare('SELECT * FROM inscricoes WHERE numero_cadastro = ?').get(numero);
-    return res.json({
-      ok: true,
-      mensagem: 'Sua ficha e seu contrato foram atualizados.',
-      ficha: dadosPublicosFicha(fichaAtualizada),
-    });
-  } catch (err) {
-    if (arquivoTemporario && fs.existsSync(arquivoTemporario)) {
-      fs.unlinkSync(arquivoTemporario);
-    }
-    console.error('Erro ao atualizar ficha:', err);
-    return res.status(500).json({ ok: false, erro: 'Não foi possível atualizar sua ficha.' });
-  }
-});
-
 // ================== ADMIN ==================
 const ADMIN_USER = 'MuayThai';
 const ADMIN_PASS = 'NakMuay';
 
-function credenciaisAdminValidas(req) {
-  const auth = req.headers.authorization;
-  if (!auth || !auth.startsWith('Basic ')) return false;
-  const [user, pass] = Buffer.from(auth.split(' ')[1], 'base64').toString().split(':');
-  return user === ADMIN_USER && pass === ADMIN_PASS;
-}
-
 // Middleware de autenticação básica
 function exigirAdmin(req, res, next) {
-  if (!credenciaisAdminValidas(req)) {
+  const auth = req.headers.authorization;
+  if (!auth || !auth.startsWith('Basic ')) {
     res.setHeader('WWW-Authenticate', 'Basic realm="Elite Combat Admin"');
-    return res.status(401).send('Autenticação necessária ou usuário/senha inválidos.');
+    return res.status(401).send('Autenticação necessária.');
   }
-  return next();
+  const [user, pass] = Buffer.from(auth.split(' ')[1], 'base64')
+    .toString()
+    .split(':');
+
+  if (user === ADMIN_USER && pass === ADMIN_PASS) {
+    return next();
+  }
+  res.setHeader('WWW-Authenticate', 'Basic realm="Elite Combat Admin"');
+  return res.status(401).send('Usuário ou senha inválidos.');
 }
 
 // Página HTML do admin

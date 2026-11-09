@@ -450,7 +450,7 @@
             <p style="color: #9CA8BC; font-size: .85rem; margin-top: 15px;">
                 O contrato foi gerado e arquivado com segurança.
             </p>
-            <a id="linkContrato" href="#">Acessar minha ficha e contrato</a>
+            <a id="linkContrato" href="#" target="_blank">Baixar Contrato</a>
             <div style="margin-top: 30px;">
                 <a href="index.html" style="background: transparent; border: 1px solid #0066FF;">Voltar para a Home</a>
             </div>
@@ -804,7 +804,7 @@ form.addEventListener('submit', async (e) => {
         document.getElementById('numExibido').textContent = data.numero_cadastro;
         document.getElementById('dataExibida').textContent =
             new Date().toLocaleString('pt-BR', { timeZone: 'America/Sao_Paulo' });
-        document.getElementById('linkContrato').href = `/ficha.html?cadastro=${data.numero_cadastro}`;
+        document.getElementById('linkContrato').href = `/api/contrato/${data.numero_cadastro}`;
         window.scrollTo({ top: 0, behavior: 'smooth' });
 
     } catch (err) {
