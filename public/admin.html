@@ -94,6 +94,13 @@
             border-radius: 8px;
             overflow-x: auto;
         }
+        .secao-admin {
+            margin-top: 32px;
+        }
+        .secao-admin h2 {
+            margin-bottom: 12px;
+            color: #fff;
+        }
         table {
             width: 100%;
             border-collapse: collapse;
@@ -208,6 +215,14 @@
     <div class="loading">Carregando inscrições...</div>
 </div>
 
+<section class="secao-admin">
+    <h2>Feedbacks publicados</h2>
+    <p class="sub">Remova feedbacks a pedido do autor. A exclusão é permanente.</p>
+    <div id="feedbackAdminConteudo" class="tabela-wrap">
+        <div class="loading">Carregando feedbacks...</div>
+    </div>
+</section>
+
 <!-- Modal detalhes -->
 <div class="modal-bg" id="modalBg">
     <div class="modal">
@@ -223,6 +238,8 @@
         remover: (n) => `/api/admin/inscricao/${n}`,
         importar: '/api/admin/importar',
         contrato: (n) => `/api/contrato/${n}`,
+        feedbacks: '/api/admin/feedback',
+        removerFeedback: (id) => `/api/admin/feedback/${id}`,
     };
 
     let todasInscricoes = [];
@@ -237,11 +254,51 @@
             todasInscricoes = data.inscricoes || [];
             renderizarStats();
             renderizarTabela(todasInscricoes);
+            await carregarFeedbacksAdmin();
         } catch (err) {
             console.error(err);
             document.getElementById('conteudo').innerHTML =
                 '<div class="vazio"><h3>Erro</h3><p>Não foi possível carregar as inscrições.</p></div>';
         }
+    }
+
+    async function carregarFeedbacksAdmin() {
+        const wrap = document.getElementById('feedbackAdminConteudo');
+        wrap.innerHTML = '<div class="loading">Carregando feedbacks...</div>';
+        try {
+            const response = await fetch(API.feedbacks);
+            const data = await response.json();
+            if (!response.ok || !data.ok) {
+                throw new Error(data.erro || 'Não foi possível carregar os feedbacks.');
+            }
+            renderizarFeedbacksAdmin(data.feedbacks || []);
+        } catch (err) {
+            console.error(err);
+            wrap.innerHTML = '<div class="vazio"><h3>Erro</h3><p>Não foi possível carregar os feedbacks.</p></div>';
+        }
+    }
+
+    function renderizarFeedbacksAdmin(feedbacks) {
+        const wrap = document.getElementById('feedbackAdminConteudo');
+        if (!feedbacks.length) {
+            wrap.innerHTML = '<div class="vazio"><h3>Nenhum feedback</h3><p>Não há feedbacks publicados.</p></div>';
+            return;
+        }
+        const linhas = feedbacks.map((feedback) => `
+            <tr>
+                <td>${escape(feedback.email)}</td>
+                <td>${feedback.nota} / 5</td>
+                <td>${escape(feedback.recomendacao)}</td>
+                <td>${escape(feedback.atualizado_em)}</td>
+                <td><button class="btn-danger" onclick="removerFeedback(${Number(feedback.id)})">Remover</button></td>
+            </tr>
+        `).join('');
+        wrap.innerHTML = `
+            <table>
+                <thead><tr><th>E-mail</th><th>Nota</th><th>Recomendação</th><th>Atualizado em</th><th>Ações</th></tr></thead>
+                <tbody>${linhas}</tbody>
+            </table>
+        `;
     }
 
     function renderizarStats() {
@@ -378,6 +435,18 @@
             }
         } catch (err) {
             alert('Erro de conexão.');
+        }
+    };
+
+    window.removerFeedback = async function (id) {
+        if (!confirm('Remover permanentemente este feedback?')) return;
+        try {
+            const response = await fetch(API.removerFeedback(id), { method: 'DELETE' });
+            const data = await response.json();
+            if (!response.ok || !data.ok) throw new Error(data.erro || 'Não foi possível remover o feedback.');
+            await carregarFeedbacksAdmin();
+        } catch (err) {
+            alert('Erro: ' + (err.message || 'não foi possível remover o feedback.'));
         }
     };
 

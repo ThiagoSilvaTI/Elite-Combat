@@ -688,6 +688,37 @@ app.get('/admin', exigirAdmin, (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'admin.html'));
 });
 
+app.get('/api/admin/feedback', exigirAdmin, (req, res) => {
+  try {
+    const feedbacks = db.prepare(`
+      SELECT id, email, nota, recomendacao, atualizado_em
+      FROM feedbacks
+      ORDER BY atualizado_em DESC
+    `).all();
+    return res.json({ ok: true, feedbacks });
+  } catch (err) {
+    console.error('Erro admin feedbacks:', err);
+    return res.status(500).json({ ok: false, erro: 'Erro ao listar feedbacks.' });
+  }
+});
+
+app.delete('/api/admin/feedback/:id', exigirAdmin, (req, res) => {
+  try {
+    const id = Number(req.params.id);
+    if (!Number.isSafeInteger(id) || id < 1) {
+      return res.status(400).json({ ok: false, erro: 'Identificador de feedback inválido.' });
+    }
+    const resultado = db.prepare('DELETE FROM feedbacks WHERE id = ?').run(id);
+    if (!resultado.changes) {
+      return res.status(404).json({ ok: false, erro: 'Feedback não encontrado.' });
+    }
+    return res.json({ ok: true, mensagem: 'Feedback removido.' });
+  } catch (err) {
+    console.error('Erro admin ao remover feedback:', err);
+    return res.status(500).json({ ok: false, erro: 'Erro ao remover feedback.' });
+  }
+});
+
 // API: listar todas as inscrições
 app.get('/api/admin/inscricoes', exigirAdmin, (req, res) => {
   try {
