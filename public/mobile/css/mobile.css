@@ -1467,3 +1467,194 @@ body:has(#cartFloatingBtn) .back-top {
         transition-duration: 0.01ms !important;
     }
 }
+
+.feedback-section {
+    padding-top: 36px;
+}
+
+.feedback-section .section-header {
+    margin-bottom: 20px;
+}
+
+.feedback-intro {
+    margin-bottom: 20px;
+    color: var(--gray-light);
+    font-size: 0.9rem;
+    line-height: 1.7;
+}
+
+.feedback-form {
+    display: grid;
+    gap: 18px;
+    padding: 20px 16px;
+    border: 1px solid rgba(77, 148, 255, 0.25);
+    border-radius: 10px;
+    background: linear-gradient(145deg, rgba(6, 20, 40, 0.98), rgba(3, 10, 24, 0.98));
+}
+
+.feedback-credentials {
+    display: grid;
+    gap: 14px;
+}
+
+.feedback-form > div > label,
+.feedback-rating legend {
+    display: block;
+    margin-bottom: 7px;
+    color: var(--gray-light);
+    font-size: 0.68rem;
+    font-weight: 700;
+    letter-spacing: 1.4px;
+    text-transform: uppercase;
+}
+
+.feedback-form input:not([type="radio"]):not([type="checkbox"]),
+.feedback-form textarea {
+    width: 100%;
+    min-height: 48px;
+    padding: 12px 14px;
+    border: 1px solid rgba(77, 148, 255, 0.3);
+    border-radius: 7px;
+    background: rgba(0, 2, 5, 0.65);
+    color: var(--white);
+    font: inherit;
+}
+
+.feedback-form textarea {
+    min-height: 120px;
+    resize: vertical;
+}
+
+.feedback-rating {
+    padding: 0;
+    border: 0;
+}
+
+.feedback-stars {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.feedback-stars input {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+}
+
+.feedback-stars label {
+    margin: 0;
+    color: #64748b;
+    font-size: 2.2rem;
+    line-height: 1;
+    cursor: pointer;
+}
+
+.feedback-rating[data-rating="1"] label[data-value="1"],
+.feedback-rating[data-rating="2"] label[data-value="1"],
+.feedback-rating[data-rating="2"] label[data-value="2"],
+.feedback-rating[data-rating="3"] label[data-value="1"],
+.feedback-rating[data-rating="3"] label[data-value="2"],
+.feedback-rating[data-rating="3"] label[data-value="3"],
+.feedback-rating[data-rating="4"] label[data-value="1"],
+.feedback-rating[data-rating="4"] label[data-value="2"],
+.feedback-rating[data-rating="4"] label[data-value="3"],
+.feedback-rating[data-rating="4"] label[data-value="4"],
+.feedback-rating[data-rating="5"] label[data-value="1"],
+.feedback-rating[data-rating="5"] label[data-value="2"],
+.feedback-rating[data-rating="5"] label[data-value="3"],
+.feedback-rating[data-rating="5"] label[data-value="4"],
+.feedback-rating[data-rating="5"] label[data-value="5"] {
+    color: #FFC800;
+}
+
+.feedback-stars input:focus-visible + label {
+    outline: 2px solid var(--blue-ice);
+    outline-offset: 3px;
+}
+
+.feedback-consent {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    color: var(--gray-light);
+    font-size: 0.8rem;
+    line-height: 1.5;
+    text-transform: none;
+    letter-spacing: 0;
+}
+
+.feedback-consent input {
+    flex: 0 0 auto;
+    width: 18px;
+    height: 18px;
+    margin-top: 2px;
+    accent-color: var(--blue-glow);
+}
+
+.feedback-submit {
+    width: 100%;
+}
+
+.feedback-submit:disabled {
+    cursor: wait;
+    opacity: 0.65;
+}
+
+.feedback-status {
+    min-height: 1.4em;
+    color: #7de2a8;
+    font-size: 0.85rem;
+}
+
+.feedback-status.error {
+    color: #ff7185;
+}
+
+.feedback-list {
+    display: grid;
+    gap: 14px;
+    margin-top: 24px;
+}
+
+.feedback-card,
+.feedback-empty {
+    padding: 18px 16px;
+    border: 1px solid rgba(77, 148, 255, 0.2);
+    border-radius: 8px;
+    background: rgba(6, 20, 40, 0.8);
+}
+
+.feedback-card-heading {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    margin-bottom: 8px;
+}
+
+.feedback-card h3 {
+    font-size: 1rem;
+    overflow-wrap: anywhere;
+}
+
+.feedback-card-stars {
+    color: #FFC800;
+    letter-spacing: 2px;
+}
+
+.feedback-card p,
+.feedback-empty {
+    color: var(--gray-light);
+    font-size: 0.88rem;
+    line-height: 1.65;
+    overflow-wrap: anywhere;
+}
+
+.feedback-empty {
+    grid-column: 1 / -1;
+}

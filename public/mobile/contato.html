@@ -74,9 +74,53 @@
     </div>
 
     <div class="contact-actions">
+        <a href="https://wa.me/559885201045" target="_blank" rel="noopener" class="btn">WhatsApp do Mestre</a>
         <a href="https://www.instagram.com/elitecombat_/" target="_blank" rel="noopener" class="btn">Instagram da Academia</a>
         <a href="https://www.instagram.com/saymon_danilo/" target="_blank" rel="noopener" class="btn btn-outline">Instagram do Mestre</a>
     </div>
+</section>
+
+<section class="section feedback-section" id="feedback">
+    <div class="section-header">
+        <h2 class="section-title">Feedback dos <span>Alunos</span></h2>
+        <div class="section-number">05</div>
+    </div>
+    <p class="feedback-intro">Já se inscreveu? Confirme seu número de cadastro e telefone para avaliar o site. Sua nota e recomendação serão publicadas com o nome da ficha; um novo envio atualiza sua avaliação.</p>
+
+    <form class="feedback-form" id="feedbackForm">
+        <div class="feedback-credentials">
+            <div>
+                <label for="feedbackNumero">Número de cadastro</label>
+                <input type="text" id="feedbackNumero" name="numero_cadastro" inputmode="numeric" pattern="[0-9]{11}" maxlength="11" autocomplete="off" placeholder="Número de 11 dígitos" required>
+            </div>
+            <div>
+                <label for="feedbackTelefone">Telefone da inscrição</label>
+                <input type="tel" id="feedbackTelefone" name="telefone" autocomplete="tel" placeholder="(99) 99999-9999" required>
+            </div>
+        </div>
+        <fieldset class="feedback-rating">
+            <legend>Nota para o site</legend>
+            <div class="feedback-stars">
+                <input type="radio" id="nota1" name="nota" value="1" required><label for="nota1" data-value="1" aria-label="1 estrela">★</label>
+                <input type="radio" id="nota2" name="nota" value="2"><label for="nota2" data-value="2" aria-label="2 estrelas">★</label>
+                <input type="radio" id="nota3" name="nota" value="3"><label for="nota3" data-value="3" aria-label="3 estrelas">★</label>
+                <input type="radio" id="nota4" name="nota" value="4"><label for="nota4" data-value="4" aria-label="4 estrelas">★</label>
+                <input type="radio" id="nota5" name="nota" value="5"><label for="nota5" data-value="5" aria-label="5 estrelas">★</label>
+            </div>
+        </fieldset>
+        <div>
+            <label for="feedbackRecomendacao">Sua recomendação</label>
+            <textarea id="feedbackRecomendacao" name="recomendacao" minlength="5" maxlength="1000" rows="4" placeholder="Conte o que achou do site..." required></textarea>
+        </div>
+        <label class="feedback-consent">
+            <input type="checkbox" name="consentimento" required>
+            <span>Autorizo a publicação da minha nota e recomendação junto ao nome da minha ficha de inscrição.</span>
+        </label>
+        <button type="submit" class="btn feedback-submit">Enviar feedback</button>
+        <p class="feedback-status" id="feedbackStatus" role="status" aria-live="polite"></p>
+    </form>
+
+    <div class="feedback-list" id="feedbackList" aria-live="polite"></div>
 </section>
 
 <footer class="footer">
@@ -105,5 +149,6 @@
 
 <button class="back-top" id="backTop" aria-label="Voltar ao topo">↑</button>
 <script src="js/mobile.js"></script>
+<script src="../js/feedback.js" defer></script>
 </body>
 </html>

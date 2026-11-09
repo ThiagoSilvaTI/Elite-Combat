@@ -293,35 +293,59 @@
                         </div>
                     </div>
                     <div>
-                        <label>Período preferido</label>
+                        <label id="periodoLabel">Período preferido</label>
                         <select name="periodo">
                             <option value="">—</option>
                             <option>Manhã</option><option>Tarde</option><option>Noite</option>
+                            <option>A definir</option>
                         </select>
                     </div>
-                    <div>
-                        <label>Horário</label>
-                        <input type="text" name="horario" placeholder="Ex.: 19h00">
+                    <div id="horarioAlunoField">
+                        <label id="horarioLabel">Horário</label>
+                        <input type="text" id="horarioAluno" name="horario" placeholder="Ex.: 19h00">
                     </div>
-                    <div>
-                        <label>Já praticou Muay Thai?</label>
-                        <select name="ja_muaythai">
-                            <option value="">—</option><option>Não</option><option>Sim</option>
+                    <div id="horarioInstrutorField" hidden>
+                        <label for="horarioInstrutor">Horário da aula</label>
+                        <select id="horarioInstrutor" disabled>
+                            <option value="">Selecione o horário</option>
+                            <option value="A definir">A definir</option>
+                            <option value="Outro">Informar outro horário</option>
+                        </select>
+                        <input type="text" id="horarioInstrutorOutro" placeholder="Ex.: 19h00" hidden disabled>
+                    </div>
+                    <div class="full instructor-class-field" id="turmaAulaField" hidden>
+                        <label>Turma de aula</label>
+                        <select name="turma_aula" id="turmaAula" disabled>
+                            <option value="">Selecione a turma</option>
+                            <option>Baby Thai</option>
+                            <option>Kids</option>
+                            <option>Juvenil / Adulto</option>
+                            <option>A definir</option>
                         </select>
                     </div>
-                    <div>
-                        <label>Já praticou outra arte marcial?</label>
-                        <select name="ja_outra_arte">
-                            <option value="">—</option><option>Não</option><option>Sim</option>
-                        </select>
-                    </div>
-                    <div>
-                        <label>Qual modalidade?</label>
-                        <input type="text" name="modalidade" placeholder="Ex.: Boxe, Jiu-Jitsu...">
-                    </div>
-                    <div>
-                        <label>Tempo de prática</label>
-                        <input type="text" name="tempo_pratica" placeholder="Ex.: 2 anos">
+                    <div class="full experience-fields" id="experienceFields">
+                        <div class="form-grid">
+                            <div>
+                                <label>Já praticou Muay Thai?</label>
+                                <select name="ja_muaythai">
+                                    <option value="">—</option><option>Não</option><option>Sim</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label>Já praticou outra arte marcial?</label>
+                                <select name="ja_outra_arte">
+                                    <option value="">—</option><option>Não</option><option>Sim</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label>Qual modalidade?</label>
+                                <input type="text" name="modalidade" placeholder="Ex.: Boxe, Jiu-Jitsu...">
+                            </div>
+                            <div>
+                                <label>Tempo de prática</label>
+                                <input type="text" name="tempo_pratica" placeholder="Ex.: 2 anos">
+                            </div>
+                        </div>
                     </div>
                     <div class="full">
                         <label>Objetivo principal</label>
@@ -472,6 +496,16 @@ const form = document.getElementById('formInscricao');
 const tipoInscricao = document.getElementById('tipoInscricao');
 const confirmacaoInstrutor = document.getElementById('confirmacaoInstrutor');
 const autorizacaoInstrutor = document.getElementById('autorizacaoInstrutor');
+const periodoLabel = document.getElementById('periodoLabel');
+const horarioLabel = document.getElementById('horarioLabel');
+const horarioAlunoField = document.getElementById('horarioAlunoField');
+const horarioInstrutorField = document.getElementById('horarioInstrutorField');
+const horarioAluno = document.getElementById('horarioAluno');
+const horarioInstrutor = document.getElementById('horarioInstrutor');
+const horarioInstrutorOutro = document.getElementById('horarioInstrutorOutro');
+const turmaAulaField = document.getElementById('turmaAulaField');
+const turmaAula = document.getElementById('turmaAula');
+const experienceFields = document.getElementById('experienceFields');
 
 function calcIdade() {
     if (!inputNasc.value) return null;
@@ -575,12 +609,47 @@ function syncAge() {
     showStep(targetIndex, activeCard !== visibleSteps[targetIndex]);
 }
 
-tipoInscricao.addEventListener('change', () => {
+function syncTipoInscricao() {
     const instructor = tipoInscricao.value === 'instrutor';
     confirmacaoInstrutor.hidden = !instructor;
     autorizacaoInstrutor.required = instructor;
-    if (!instructor) autorizacaoInstrutor.checked = false;
+    turmaAulaField.hidden = !instructor;
+    turmaAula.disabled = !instructor;
+    turmaAula.required = instructor;
+    form.periodo.required = instructor;
+    horarioAlunoField.hidden = instructor;
+    horarioAluno.disabled = instructor;
+    horarioAluno.required = false;
+    horarioInstrutorField.hidden = !instructor;
+    horarioInstrutor.disabled = !instructor;
+    horarioInstrutor.required = instructor;
+    experienceFields.hidden = instructor;
+    periodoLabel.textContent = instructor ? 'Horário de treino' : 'Período preferido';
+    horarioLabel.textContent = 'Horário';
+
+    if (instructor) {
+        ['ja_muaythai', 'ja_outra_arte', 'modalidade', 'tempo_pratica'].forEach(name => {
+            form.elements[name].value = '';
+        });
+    } else {
+        autorizacaoInstrutor.checked = false;
+        turmaAula.value = '';
+        horarioInstrutor.value = '';
+        horarioInstrutorOutro.value = '';
+        horarioInstrutorOutro.hidden = true;
+        horarioInstrutorOutro.disabled = true;
+    }
+}
+
+tipoInscricao.addEventListener('change', syncTipoInscricao);
+horarioInstrutor.addEventListener('change', () => {
+    const outroHorario = horarioInstrutor.value === 'Outro';
+    horarioInstrutorOutro.hidden = !outroHorario;
+    horarioInstrutorOutro.disabled = !outroHorario;
+    horarioInstrutorOutro.required = outroHorario;
+    if (!outroHorario) horarioInstrutorOutro.value = '';
 });
+syncTipoInscricao();
 
 inputNasc.addEventListener('input', syncAge);
 inputNasc.addEventListener('change', syncAge);
@@ -691,11 +760,14 @@ form.addEventListener('submit', async (e) => {
         tipo_inscricao: tipoInscricao.value,
         autorizacao_instrutor: autorizacaoInstrutor.checked,
         periodo: form.periodo.value,
-        horario: form.horario.value,
-        ja_muaythai: form.ja_muaythai.value,
-        ja_outra_arte: form.ja_outra_arte.value,
-        modalidade: form.modalidade.value,
-        tempo_pratica: form.tempo_pratica.value,
+        horario: tipoInscricao.value === 'instrutor'
+            ? horarioInstrutor.value === 'Outro' ? horarioInstrutorOutro.value : horarioInstrutor.value
+            : horarioAluno.value,
+        turma_aula: tipoInscricao.value === 'instrutor' ? turmaAula.value : null,
+        ja_muaythai: tipoInscricao.value === 'instrutor' ? null : form.elements.ja_muaythai.value,
+        ja_outra_arte: tipoInscricao.value === 'instrutor' ? null : form.elements.ja_outra_arte.value,
+        modalidade: tipoInscricao.value === 'instrutor' ? null : form.elements.modalidade.value,
+        tempo_pratica: tipoInscricao.value === 'instrutor' ? null : form.elements.tempo_pratica.value,
         objetivo: form.objetivo.value,
         resp_nome: form.resp_nome.value,
         resp_parentesco: form.resp_parentesco.value,

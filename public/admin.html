@@ -342,8 +342,9 @@
         document.getElementById('modalConteudo').innerHTML = `
             <div class="linha"><div class="lbl">Nome</div><div class="val">${escape(i.nome)}</div></div>
             <div class="linha"><div class="lbl">Idade / Telefone</div><div class="val">${i.idade} anos · ${escape(i.telefone)}</div></div>
-            <div class="linha"><div class="lbl">Turma</div><div class="val">${escape(i.turma)} ${i.periodo ? '· ' + escape(i.periodo) : ''} ${i.horario ? '· ' + escape(i.horario) : ''}</div></div>
+            <div class="linha"><div class="lbl">Turma por idade</div><div class="val">${escape(i.turma)} ${i.periodo ? '· ' + escape(i.periodo) : ''} ${i.horario ? '· ' + escape(i.horario) : ''}</div></div>
             <div class="linha"><div class="lbl">Tipo de inscrição</div><div class="val">${i.tipo_inscricao === 'instrutor' ? 'Instrutor Elite · autorização do professor confirmada' : 'Aluno'}</div></div>
+            ${i.tipo_inscricao === 'instrutor' ? `<div class="linha"><div class="lbl">Turma de aula</div><div class="val">${escape(i.turma_aula || 'A definir')}</div></div>` : ''}
             <div class="linha"><div class="lbl">Objetivo</div><div class="val">${escape(i.objetivo || '—')}</div></div>
             ${i.resp_nome ? `<div class="linha"><div class="lbl">Responsável</div><div class="val">${escape(i.resp_nome)} · ${escape(i.resp_telefone || '')}</div></div>` : ''}
             <div class="linha"><div class="lbl">Emergência</div><div class="val">${escape(i.emerg_nome)} · ${escape(i.emerg_telefone)}</div></div>

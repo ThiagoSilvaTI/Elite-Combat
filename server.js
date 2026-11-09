@@ -27,6 +27,7 @@ db.exec(`
     idade         INTEGER NOT NULL,
     telefone      TEXT NOT NULL,
     turma         TEXT NOT NULL,
+    turma_aula    TEXT,
     periodo       TEXT,
     horario       TEXT,
     ja_muaythai   TEXT,
@@ -58,6 +59,26 @@ if (!colunasInscricao.has('tipo_inscricao')) {
 }
 if (!colunasInscricao.has('autorizacao_instrutor')) {
   db.exec('ALTER TABLE inscricoes ADD COLUMN autorizacao_instrutor INTEGER NOT NULL DEFAULT 0');
+}
+if (!colunasInscricao.has('turma_aula')) {
+  db.exec('ALTER TABLE inscricoes ADD COLUMN turma_aula TEXT');
+}
+
+db.exec(`
+  CREATE TABLE IF NOT EXISTS feedbacks (
+    numero_cadastro TEXT PRIMARY KEY,
+    nota INTEGER NOT NULL CHECK (nota BETWEEN 1 AND 5),
+    recomendacao TEXT NOT NULL,
+    criado_em TEXT NOT NULL DEFAULT (datetime('now')),
+    atualizado_em TEXT NOT NULL DEFAULT (datetime('now'))
+  );
+`);
+
+function normalizarTelefone(valor) {
+  const digits = String(valor || '').replace(/\D/g, '');
+  return digits.startsWith('55') && (digits.length === 12 || digits.length === 13)
+    ? digits.slice(2)
+    : digits;
 }
 
 // ================== DETECÇÃO DE DISPOSITIVO ==================
@@ -146,6 +167,82 @@ app.get('/api/preferencia', (req, res) => {
   res.redirect(destino);
 });
 
+app.get('/api/feedback', (req, res) => {
+  try {
+    const feedbacks = db.prepare(`
+      SELECT i.nome, f.nota, f.recomendacao, f.atualizado_em
+      FROM feedbacks f
+      JOIN inscricoes i ON i.numero_cadastro = f.numero_cadastro
+      ORDER BY f.atualizado_em DESC
+      LIMIT 50
+    `).all();
+    return res.json({ ok: true, feedbacks });
+  } catch (err) {
+    console.error('Erro ao listar feedbacks:', err);
+    return res.status(500).json({ ok: false, erro: 'Não foi possível carregar os feedbacks.' });
+  }
+});
+
+app.post('/api/feedback', (req, res) => {
+  try {
+    const numero = String(req.body?.numero_cadastro || '').trim();
+    const telefone = String(req.body?.telefone || '').trim();
+    const recomendacao = String(req.body?.recomendacao || '').trim();
+    const nota = Number(req.body?.nota);
+    const consentimento = req.body?.consentimento === true;
+
+    if (!/^\d{11}$/.test(numero) || !/^[\d\s()+-]{10,20}$/.test(telefone)) {
+      return res.status(400).json({
+        ok: false,
+        erro: 'Informe um número de cadastro válido e o telefone usado na inscrição.',
+      });
+    }
+    if (!Number.isInteger(nota) || nota < 1 || nota > 5) {
+      return res.status(400).json({ ok: false, erro: 'Escolha uma nota de 1 a 5.' });
+    }
+    if (recomendacao.length < 5 || recomendacao.length > 1000) {
+      return res.status(400).json({
+        ok: false,
+        erro: 'A recomendação deve ter entre 5 e 1000 caracteres.',
+      });
+    }
+    if (!consentimento) {
+      return res.status(400).json({
+        ok: false,
+        erro: 'Autorize a publicação da sua avaliação junto ao nome da ficha.',
+      });
+    }
+
+    const inscricao = db.prepare(
+      'SELECT nome, telefone FROM inscricoes WHERE numero_cadastro = ?'
+    ).get(numero);
+    if (!inscricao || normalizarTelefone(inscricao.telefone) !== normalizarTelefone(telefone)) {
+      return res.status(404).json({
+        ok: false,
+        erro: 'Não encontramos uma inscrição com esses dados. Confira o número de cadastro e o telefone.',
+      });
+    }
+
+    db.prepare(`
+      INSERT INTO feedbacks (numero_cadastro, nota, recomendacao)
+      VALUES (?, ?, ?)
+      ON CONFLICT(numero_cadastro) DO UPDATE SET
+        nota = excluded.nota,
+        recomendacao = excluded.recomendacao,
+        atualizado_em = datetime('now')
+    `).run(numero, nota, recomendacao);
+
+    return res.json({
+      ok: true,
+      mensagem: 'Obrigado por compartilhar sua avaliação!',
+      nome: inscricao.nome,
+    });
+  } catch (err) {
+    console.error('Erro ao salvar feedback:', err);
+    return res.status(500).json({ ok: false, erro: 'Não foi possível enviar o feedback.' });
+  }
+});
+
 // ---- Rota: gerar número de cadastro único de 11 dígitos ----
 function gerarNumeroCadastro() {
   let n;
@@ -200,6 +297,19 @@ app.post('/api/inscricao', (req, res) => {
         erro: 'Confirme a autorização do professor para a inscrição como Instrutor Elite.',
       });
     }
+    if (tipo_inscricao === 'instrutor') {
+      const periodosValidos = ['Manhã', 'Tarde', 'Noite', 'A definir'];
+      const turmasAulaValidas = ['Baby Thai', 'Kids', 'Juvenil / Adulto', 'A definir'];
+      if (!periodosValidos.includes(b.periodo)) {
+        return res.status(400).json({ ok: false, erro: 'Informe o horário de treino.' });
+      }
+      if (!turmasAulaValidas.includes(b.turma_aula)) {
+        return res.status(400).json({ ok: false, erro: 'Informe a turma de aula.' });
+      }
+      if (!String(b.horario || '').trim()) {
+        return res.status(400).json({ ok: false, erro: 'Informe o horário da aula ou selecione "A definir".' });
+      }
+    }
 
     const menor = idade < 18;
     if (menor) {
@@ -245,7 +355,7 @@ app.post('/api/inscricao', (req, res) => {
       INSERT INTO inscricoes (
         numero_cadastro, data_preenchimento, responsavel_atendimento,
         nome, data_nascimento, idade, telefone,
-        turma, periodo, horario, ja_muaythai, ja_outra_arte, modalidade, tempo_pratica, objetivo,
+        turma, turma_aula, periodo, horario, ja_muaythai, ja_outra_arte, modalidade, tempo_pratica, objetivo,
         tipo_inscricao, autorizacao_instrutor,
         resp_nome, resp_parentesco, resp_telefone,
         emerg_nome, emerg_parentesco, emerg_telefone,
@@ -253,7 +363,7 @@ app.post('/api/inscricao', (req, res) => {
       ) VALUES (
         @numero_cadastro, @data_preenchimento, @responsavel_atendimento,
         @nome, @data_nascimento, @idade, @telefone,
-        @turma, @periodo, @horario, @ja_muaythai, @ja_outra_arte, @modalidade, @tempo_pratica, @objetivo,
+        @turma, @turma_aula, @periodo, @horario, @ja_muaythai, @ja_outra_arte, @modalidade, @tempo_pratica, @objetivo,
         @tipo_inscricao, @autorizacao_instrutor,
         @resp_nome, @resp_parentesco, @resp_telefone,
         @emerg_nome, @emerg_parentesco, @emerg_telefone,
@@ -271,12 +381,13 @@ app.post('/api/inscricao', (req, res) => {
       idade,
       telefone: b.telefone.trim(),
       turma,
+      turma_aula: tipo_inscricao === 'instrutor' ? b.turma_aula || null : null,
       periodo: b.periodo || null,
       horario: b.horario || null,
-      ja_muaythai: b.ja_muaythai || null,
-      ja_outra_arte: b.ja_outra_arte || null,
-      modalidade: b.modalidade || null,
-      tempo_pratica: b.tempo_pratica || null,
+      ja_muaythai: tipo_inscricao === 'instrutor' ? null : b.ja_muaythai || null,
+      ja_outra_arte: tipo_inscricao === 'instrutor' ? null : b.ja_outra_arte || null,
+      modalidade: tipo_inscricao === 'instrutor' ? null : b.modalidade || null,
+      tempo_pratica: tipo_inscricao === 'instrutor' ? null : b.tempo_pratica || null,
       objetivo: b.objetivo || null,
       tipo_inscricao,
       autorizacao_instrutor: autorizacao_instrutor ? 1 : 0,
@@ -303,6 +414,7 @@ app.post('/api/inscricao', (req, res) => {
       idade,
       telefone: b.telefone.trim(),
       turma,
+      turma_aula: tipo_inscricao === 'instrutor' ? b.turma_aula || 'A definir' : null,
       tipo_inscricao,
       autorizacao_instrutor,
       periodo: b.periodo || '-',
@@ -368,10 +480,6 @@ app.get('/api/integracao/inscricao', (req, res) => {
     return res.status(400).json({ ok: false, erro: 'Número de cadastro ou telefone inválido.' });
   }
 
-  const normalizarTelefone = (valor) => {
-    const digits = String(valor || '').replace(/\D/g, '');
-    return digits.startsWith('55') && digits.length === 13 ? digits.slice(2) : digits;
-  };
   const row = db
     .prepare('SELECT * FROM inscricoes WHERE numero_cadastro = ?')
     .get(numero);
@@ -401,6 +509,7 @@ app.get('/api/integracao/inscricao', (req, res) => {
       turma: row.turma,
       tipo_inscricao: row.tipo_inscricao || 'aluno',
       autorizacao_instrutor: !!row.autorizacao_instrutor,
+      turma_aula: row.turma_aula,
       periodo: row.periodo,
       horario: row.horario,
       ja_muaythai: row.ja_muaythai,
@@ -442,8 +551,14 @@ function gerarContrato(d) {
   if (d.tipo_inscricao === 'instrutor' && d.autorizacao_instrutor) {
     linhas.push('Autorização professor ...: Confirmada');
   }
-  linhas.push(`Período .................: ${d.periodo}`);
-  linhas.push(`Horário .................: ${d.horario}`);
+  if (d.tipo_inscricao === 'instrutor') {
+    linhas.push(`Turma de aula ...........: ${d.turma_aula || 'A definir'}`);
+    linhas.push(`Horário de treino .......: ${d.periodo || 'A definir'}`);
+    linhas.push(`Horário da aula .........: ${d.horario || 'A definir'}`);
+  } else {
+    linhas.push(`Período .................: ${d.periodo}`);
+    linhas.push(`Horário .................: ${d.horario}`);
+  }
   if (d.resp_nome) {
     linhas.push('');
     linhas.push('--------- RESPONSÁVEL LEGAL (menor de 18) -------');
@@ -528,7 +643,7 @@ app.get('/api/admin/inscricoes', exigirAdmin, (req, res) => {
     const rows = db
       .prepare(
         `SELECT id, numero_cadastro, data_preenchimento, nome, idade, telefone,
-                turma, tipo_inscricao, autorizacao_instrutor, periodo, horario, objetivo,
+                turma, tipo_inscricao, autorizacao_instrutor, turma_aula, periodo, horario, objetivo,
                 resp_nome, resp_telefone,
                 emerg_nome, emerg_telefone,
                 saude_json, adaptacoes,
@@ -585,7 +700,7 @@ app.post('/api/admin/importar', exigirAdmin, express.json({ limit: '10mb' }), (r
       INSERT OR IGNORE INTO inscricoes (
         numero_cadastro, data_preenchimento, responsavel_atendimento,
         nome, data_nascimento, idade, telefone,
-        turma, periodo, horario, ja_muaythai, ja_outra_arte, modalidade, tempo_pratica, objetivo,
+        turma, turma_aula, periodo, horario, ja_muaythai, ja_outra_arte, modalidade, tempo_pratica, objetivo,
         tipo_inscricao, autorizacao_instrutor,
         resp_nome, resp_parentesco, resp_telefone,
         emerg_nome, emerg_parentesco, emerg_telefone,
@@ -594,7 +709,7 @@ app.post('/api/admin/importar', exigirAdmin, express.json({ limit: '10mb' }), (r
       ) VALUES (
         @numero_cadastro, @data_preenchimento, @responsavel_atendimento,
         @nome, @data_nascimento, @idade, @telefone,
-        @turma, @periodo, @horario, @ja_muaythai, @ja_outra_arte, @modalidade, @tempo_pratica, @objetivo,
+        @turma, @turma_aula, @periodo, @horario, @ja_muaythai, @ja_outra_arte, @modalidade, @tempo_pratica, @objetivo,
         @tipo_inscricao, @autorizacao_instrutor,
         @resp_nome, @resp_parentesco, @resp_telefone,
         @emerg_nome, @emerg_parentesco, @emerg_telefone,
@@ -617,6 +732,7 @@ app.post('/api/admin/importar', exigirAdmin, express.json({ limit: '10mb' }), (r
           idade: r.idade || 0,
           telefone: r.telefone || '',
           turma: r.turma || '',
+          turma_aula: r.turma_aula || null,
           tipo_inscricao: r.tipo_inscricao || 'aluno',
           autorizacao_instrutor: r.autorizacao_instrutor ? 1 : 0,
           periodo: r.periodo || null,
