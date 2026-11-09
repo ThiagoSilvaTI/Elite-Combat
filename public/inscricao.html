@@ -31,6 +31,13 @@
     .form-wrap { max-width: 900px; margin: 0 auto; }
     .form-step { background: var(--deep-sea, #030A18); border: 1px solid rgba(0,102,255,.25);
         padding: 40px; margin-bottom: 30px; position: relative; }
+    .form-step[hidden] { display: none !important; }
+    .step-navigation { display: flex; align-items: center; justify-content: space-between; gap: 15px; margin-top: 30px; }
+    .step-navigation span { color: var(--gray-light, #9CA8BC); font-size: .85rem; text-align: center; }
+    .step-button { padding: 13px 22px; background: transparent; border: 1px solid #0066FF; color: #fff;
+        font: inherit; letter-spacing: 1px; text-transform: uppercase; cursor: pointer; }
+    .step-button:hover { background: rgba(0,102,255,.15); }
+    .step-button[hidden] { display: none; }
     .form-step h3 { font-family: var(--font-display, 'Anton', sans-serif); font-size: 1.6rem;
         text-transform: uppercase; letter-spacing: 2px; margin-bottom: 8px; color: #fff; }
     .form-step .step-num { font-family: var(--font-display, 'Anton', sans-serif); color: rgba(0,102,255,.25);
@@ -318,7 +325,7 @@
             </div>
 
             <!-- 03 · RESPONSÁVEL LEGAL -->
-            <div class="form-step reveal">
+            <div class="form-step reveal" id="guardianStep">
                 <span class="step-num" id="step03">03</span>
                 <h3>Dados do Responsável Legal</h3>
                 <p class="desc">Obrigatório apenas para menores de 18 anos.</p>
@@ -342,14 +349,14 @@
             </div>
 
             <!-- 04 · CONTATO DE EMERGÊNCIA -->
-            <div class="form-step reveal">
+            <div class="form-step reveal" id="emergencyStep">
                 <span class="step-num" id="step04">04</span>
                 <h3>Contato de Emergência</h3>
                 <p class="desc">Não pode ser o mesmo número do aluno.</p>
                 <div class="form-grid">
                     <div class="full">
                         <label>Nome completo *</label>
-                        <input type="text" name="emerg_nome" required>
+                        <input type="text" name="emerg_nome">
                     </div>
                     <div>
                         <label>Parentesco / vínculo</label>
@@ -357,7 +364,7 @@
                     </div>
                     <div>
                         <label>Telefone / WhatsApp *</label>
-                        <input type="tel" name="emerg_telefone" required placeholder="(99) 99999-9999">
+                        <input type="tel" name="emerg_telefone" placeholder="(99) 99999-9999">
                     </div>
                 </div>
             </div>
@@ -448,6 +455,7 @@ const idadeOut  = document.getElementById('idade');
 const avisoMenor = document.getElementById('avisoMenor');
 const respNome = document.getElementById('resp_nome');
 const respTel  = document.getElementById('resp_telefone');
+const form = document.getElementById('formInscricao');
 
 function calcIdade() {
     if (!inputNasc.value) return null;
@@ -459,16 +467,88 @@ function calcIdade() {
     return (i >= 0 && i < 130) ? i : null;
 }
 
-const step04 = document.getElementById('step04');
-  inputNasc.addEventListener('change', () => {
-      const i = calcIdade();
-      idadeOut.value = i !== null ? i + ' anos' : '';
-      const menor = i !== null && i < 18;
-      avisoMenor.style.display = menor ? 'block' : 'none';
-      respNome.required = menor;
-      respTel.required  = menor;
-      step04.style.display = menor ? 'none' : 'block';
-  });
+const stepCards = Array.from(document.querySelectorAll('#formInscricao .form-step'));
+const guardianCard = document.getElementById('guardianStep');
+const emergencyCard = document.getElementById('emergencyStep');
+let visibleSteps = [];
+let currentStep = 0;
+
+function isStepValid(card) {
+    const invalidField = Array.from(card.querySelectorAll('input, select, textarea'))
+        .find(field => field.willValidate && !field.checkValidity());
+    if (!invalidField) return true;
+    if (card.hidden) showStep(visibleSteps.indexOf(card), false);
+    invalidField.reportValidity();
+    invalidField.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    return false;
+}
+
+function showStep(index, scroll = true) {
+    currentStep = index;
+    stepCards.forEach(card => { card.hidden = true; });
+    const card = visibleSteps[currentStep];
+    card.hidden = false;
+    card.classList.add('active');
+
+    visibleSteps.forEach((step, stepIndex) => {
+        const nav = step.querySelector('.step-navigation');
+        nav.querySelector('.step-back').hidden = stepIndex === 0;
+        nav.querySelector('.step-next').hidden = stepIndex === visibleSteps.length - 1;
+        nav.querySelector('span').textContent = `Etapa ${stepIndex + 1} de ${visibleSteps.length}`;
+    });
+
+    if (scroll) card.scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+stepCards.forEach(card => {
+    const nav = document.createElement('div');
+    nav.className = 'step-navigation';
+    nav.innerHTML = `
+        <button type="button" class="step-button step-back">Voltar</button>
+        <span aria-live="polite"></span>
+        <button type="button" class="step-button step-next">Avançar</button>
+    `;
+    card.appendChild(nav);
+
+    nav.querySelector('.step-back').addEventListener('click', () => {
+        if (currentStep > 0) showStep(currentStep - 1);
+    });
+    nav.querySelector('.step-next').addEventListener('click', () => {
+        syncAge();
+        if (!isStepValid(visibleSteps[currentStep])) return;
+        if (currentStep < visibleSteps.length - 1) showStep(currentStep + 1);
+    });
+});
+
+function syncAge() {
+    const age = calcIdade();
+    const minor = age !== null && age < 18;
+    idadeOut.value = age !== null ? age + ' anos' : '';
+    avisoMenor.style.display = minor ? 'block' : 'none';
+    respNome.required = minor;
+    respTel.required = minor;
+    form.emerg_nome.required = minor;
+    form.emerg_telefone.required = minor;
+
+    if (!minor) {
+        form.resp_nome.value = '';
+        form.resp_parentesco.value = '';
+        form.resp_telefone.value = '';
+        form.emerg_nome.value = '';
+        form.emerg_parentesco.value = '';
+        form.emerg_telefone.value = '';
+    }
+
+    const activeCard = visibleSteps[currentStep];
+    visibleSteps = stepCards.filter(card => minor || (card !== guardianCard && card !== emergencyCard));
+    const nextIndex = visibleSteps.indexOf(activeCard);
+    const targetIndex = nextIndex === -1 ? Math.min(currentStep, visibleSteps.length - 1) : nextIndex;
+    showStep(targetIndex, activeCard !== visibleSteps[targetIndex]);
+}
+
+inputNasc.addEventListener('input', syncAge);
+inputNasc.addEventListener('change', syncAge);
+syncAge();
 
 // ================= PERGUNTAS DE SAÚDE =================
 const perguntas = [
@@ -506,7 +586,6 @@ perguntas.forEach((p, idx) => {
 });
 
 // ================= ENVIO =================
-const form = document.getElementById('formInscricao');
 const msgErro = document.getElementById('msgErro');
 const btnEnviar = document.getElementById('btnEnviar');
 
@@ -519,6 +598,14 @@ function mostrarErro(txt) {
 form.addEventListener('submit', async (e) => {
     e.preventDefault();
     msgErro.style.display = 'none';
+
+    syncAge();
+    for (const card of visibleSteps) {
+        if (!isStepValid(card)) {
+            showStep(visibleSteps.indexOf(card));
+            return;
+        }
+    }
 
     // Valida telefone de emergência diferente
     const telAluno = form.telefone.value.replace(/\D/g, '');
