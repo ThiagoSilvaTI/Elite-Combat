@@ -182,6 +182,46 @@
             font-size: 0.85rem;
             color: #FFC800;
         }
+        #painelAdmin[hidden], #loginAdmin[hidden] { display: none; }
+        .login-shell {
+            min-height: calc(100vh - 40px);
+            display: grid;
+            place-items: center;
+        }
+        .login-card {
+            width: min(100%, 400px);
+            padding: 32px;
+            background: #030A18;
+            border: 1px solid rgba(0, 102, 255, 0.35);
+            border-radius: 12px;
+            box-shadow: 0 24px 80px rgba(0, 60, 160, 0.18);
+        }
+        .login-card h1 { margin-bottom: 8px; }
+        .login-card .sub { margin-bottom: 24px; }
+        .login-card label {
+            display: block;
+            margin: 16px 0 7px;
+            color: #9CA8BC;
+            font-size: 0.8rem;
+        }
+        .login-card input {
+            width: 100%;
+            padding: 13px 14px;
+            background: #000205;
+            border: 1px solid rgba(0, 102, 255, 0.3);
+            border-radius: 6px;
+            color: #fff;
+            font: inherit;
+        }
+        .login-card input:focus { outline: none; border-color: #0066FF; }
+        .login-card button { width: 100%; justify-content: center; margin-top: 22px; }
+        #loginErro { min-height: 1.2em; margin-top: 14px; color: #F87171; font-size: 0.85rem; }
+        .admin-heading {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            gap: 16px;
+        }
 
         @media (max-width: 640px) {
             body { padding: 12px; }
@@ -189,14 +229,34 @@
             .toolbar { padding: 14px; }
             th, td { padding: 8px 6px; font-size: 0.75rem; }
             .acoes { flex-direction: column; }
+            .login-card { padding: 24px; }
         }
     </style>
 </head>
 <body>
 
+<section class="login-shell" id="loginAdmin" aria-labelledby="loginTitulo">
+    <form class="login-card" id="formLogin">
+        <h1 id="loginTitulo">Admin <span>Elite Combat</span></h1>
+        <p class="sub">Entre com suas credenciais para acessar o painel.</p>
+        <label for="usuarioAdmin">Usuário</label>
+        <input id="usuarioAdmin" name="usuario" type="text" autocomplete="username" required>
+        <label for="senhaAdmin">Senha</label>
+        <input id="senhaAdmin" name="senha" type="password" autocomplete="current-password" required>
+        <p id="loginErro" role="alert" aria-live="polite"></p>
+        <button class="btn-primary" type="submit" id="btnEntrar">Entrar</button>
+    </form>
+</section>
+
+<main id="painelAdmin" hidden>
+<div class="admin-heading">
+    <div>
 <h1>Admin <span>Elite Combat</span></h1>
-<p class="sub">Banco de dados de inscrições — logado como <strong>MuayThai</strong></p>
+<p class="sub">Banco de dados de inscrições</p>
 <p class="sub"><a href="/admin/mobile" style="color:#7db2ff;">Abrir painel mobile</a></p>
+    </div>
+    <button class="btn-ghost" id="btnSair" type="button">Sair</button>
+</div>
 
 <div class="aviso">
     ⚠️ <strong>Atenção:</strong> o Render apaga o banco a cada deploy. Use <strong>Exportar Backup</strong> antes de cada atualização e <strong>Importar Backup</strong> depois, para não perder os dados.
@@ -232,6 +292,7 @@
         <button class="btn-danger fechar" id="btnFecharModal">Fechar</button>
     </div>
 </div>
+</main>
 
 <script>
     const API = {
@@ -515,8 +576,62 @@
     // ==================== ATUALIZAR ====================
     document.getElementById('btnAtualizar').addEventListener('click', carregar);
 
-    // ==================== INICIAL ====================
-    carregar();
+    const formLogin = document.getElementById('formLogin');
+    const loginErro = document.getElementById('loginErro');
+    const btnEntrar = document.getElementById('btnEntrar');
+
+    function abrirPainel() {
+        document.getElementById('loginAdmin').hidden = true;
+        document.getElementById('painelAdmin').hidden = false;
+        carregar();
+    }
+
+    formLogin.addEventListener('submit', async (event) => {
+        event.preventDefault();
+        loginErro.textContent = '';
+        btnEntrar.disabled = true;
+        btnEntrar.textContent = 'Entrando...';
+        try {
+            const response = await fetch('/api/admin/login', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    usuario: document.getElementById('usuarioAdmin').value,
+                    senha: document.getElementById('senhaAdmin').value,
+                }),
+            });
+            const data = await response.json();
+            if (!response.ok || !data.ok) {
+                throw new Error(data.erro || 'Não foi possível entrar.');
+            }
+            document.getElementById('senhaAdmin').value = '';
+            abrirPainel();
+        } catch (error) {
+            loginErro.textContent = error.message || 'Não foi possível conectar ao servidor.';
+        } finally {
+            btnEntrar.disabled = false;
+            btnEntrar.textContent = 'Entrar';
+        }
+    });
+
+    document.getElementById('btnSair').addEventListener('click', async () => {
+        try {
+            const response = await fetch('/api/admin/logout', { method: 'POST' });
+            if (!response.ok) throw new Error('Não foi possível encerrar a sessão.');
+            document.getElementById('painelAdmin').hidden = true;
+            document.getElementById('loginAdmin').hidden = false;
+            formLogin.reset();
+            loginErro.textContent = '';
+        } catch (error) {
+            alert(error.message || 'Não foi possível encerrar a sessão.');
+        }
+    });
+
+    fetch('/api/admin/sessao')
+        .then((response) => {
+            if (response.ok) abrirPainel();
+        })
+        .catch((error) => console.error('Não foi possível validar a sessão:', error));
 </script>
 </body>
 </html>

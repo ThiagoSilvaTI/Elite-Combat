@@ -793,35 +793,118 @@ function gerarContrato(d) {
 // ================== ADMIN ==================
 const ADMIN_USER = 'MuayThai';
 const ADMIN_PASS = 'NakMuay';
+const ADMIN_SESSION_COOKIE = 'elite_admin_session';
+const ADMIN_SESSION_TTL_SECONDS = 8 * 60 * 60;
 
-// Middleware de autenticação básica
+function compararSegredos(valor, esperado) {
+  const recebido = Buffer.from(String(valor || ''));
+  const correto = Buffer.from(esperado);
+  return recebido.length === correto.length && crypto.timingSafeEqual(recebido, correto);
+}
+
+function criarSessaoAdmin(expiraEm) {
+  const assinatura = crypto
+    .createHmac('sha256', ADMIN_PASS)
+    .update(String(expiraEm))
+    .digest('hex');
+  return `${expiraEm}.${assinatura}`;
+}
+
+function sessaoAdminValida(req) {
+  const cookies = String(req.headers.cookie || '').split(';');
+  const cookie = cookies
+    .map((item) => item.trim())
+    .find((item) => item.startsWith(`${ADMIN_SESSION_COOKIE}=`));
+  if (!cookie) return false;
+
+  const token = cookie.slice(ADMIN_SESSION_COOKIE.length + 1);
+  const [expiraTexto, assinatura] = token.split('.');
+  const expiraEm = Number(expiraTexto);
+  if (!Number.isSafeInteger(expiraEm) || expiraEm <= Date.now() || !assinatura) {
+    return false;
+  }
+
+  return compararSegredos(assinatura, criarSessaoAdmin(expiraEm).split('.')[1]);
+}
+
+// Aceita a sessão do painel desktop e mantém compatibilidade com o painel mobile.
 function exigirAdmin(req, res, next) {
+  if (sessaoAdminValida(req)) return next();
+
   const auth = req.headers.authorization;
   if (!auth || !auth.startsWith('Basic ')) {
-    res.setHeader('WWW-Authenticate', 'Basic realm="Elite Combat Admin"');
+    if (req.path !== '/api/admin/sessao') {
+      res.setHeader('WWW-Authenticate', 'Basic realm="Elite Combat Admin"');
+    }
     return res.status(401).send('Autenticação necessária.');
   }
-  const [user, pass] = Buffer.from(auth.split(' ')[1], 'base64')
-    .toString()
-    .split(':');
+  let credenciais;
+  try {
+    credenciais = Buffer.from(auth.slice(6), 'base64').toString('utf-8');
+  } catch (err) {
+    return res.status(401).send('Usuário ou senha inválidos.');
+  }
+  const separador = credenciais.indexOf(':');
+  if (separador < 0) {
+    if (req.path !== '/api/admin/sessao') {
+      res.setHeader('WWW-Authenticate', 'Basic realm="Elite Combat Admin"');
+    }
+    return res.status(401).send('Usuário ou senha inválidos.');
+  }
+  const user = credenciais.slice(0, separador);
+  const pass = credenciais.slice(separador + 1);
 
-  if (user === ADMIN_USER && pass === ADMIN_PASS) {
+  if (compararSegredos(user, ADMIN_USER) && compararSegredos(pass, ADMIN_PASS)) {
     return next();
   }
-  res.setHeader('WWW-Authenticate', 'Basic realm="Elite Combat Admin"');
+  if (req.path !== '/api/admin/sessao') {
+    res.setHeader('WWW-Authenticate', 'Basic realm="Elite Combat Admin"');
+  }
   return res.status(401).send('Usuário ou senha inválidos.');
 }
 
 // Página HTML do admin
-app.get('/admin', exigirAdmin, (req, res) => {
+app.get('/admin', (req, res) => {
   if (ehDispositivoMovel(req)) {
     return res.redirect('/admin/mobile');
   }
+  res.setHeader('Cache-Control', 'no-store');
   res.sendFile(path.join(__dirname, 'public', 'admin.html'));
 });
 
 app.get('/admin/mobile', exigirAdmin, (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'admin-mobile.html'));
+});
+
+app.post('/api/admin/login', (req, res) => {
+  const usuario = String(req.body?.usuario || '');
+  const senha = String(req.body?.senha || '');
+  if (!compararSegredos(usuario, ADMIN_USER) || !compararSegredos(senha, ADMIN_PASS)) {
+    return res.status(401).json({ ok: false, erro: 'Usuário ou senha inválidos.' });
+  }
+
+  const expiraEm = Date.now() + ADMIN_SESSION_TTL_SECONDS * 1000;
+  const secure = estaNoRender || req.secure ? '; Secure' : '';
+  res.setHeader(
+    'Set-Cookie',
+    `${ADMIN_SESSION_COOKIE}=${criarSessaoAdmin(expiraEm)}; Path=/; Max-Age=${ADMIN_SESSION_TTL_SECONDS}; HttpOnly; SameSite=Strict${secure}`
+  );
+  res.setHeader('Cache-Control', 'no-store');
+  return res.json({ ok: true });
+});
+
+app.get('/api/admin/sessao', exigirAdmin, (req, res) => {
+  res.setHeader('Cache-Control', 'no-store');
+  return res.json({ ok: true });
+});
+
+app.post('/api/admin/logout', (req, res) => {
+  const secure = estaNoRender || req.secure ? '; Secure' : '';
+  res.setHeader(
+    'Set-Cookie',
+    `${ADMIN_SESSION_COOKIE}=; Path=/; Max-Age=0; HttpOnly; SameSite=Strict${secure}`
+  );
+  return res.json({ ok: true });
 });
 
 app.get('/api/admin/feedback', exigirAdmin, async (req, res) => {
