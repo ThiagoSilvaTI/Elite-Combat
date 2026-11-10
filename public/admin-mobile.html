@@ -547,13 +547,14 @@
             if (!Array.isArray(payload.inscricoes)) {
                 throw new Error('O backup precisa conter uma lista de inscrições.');
             }
-            if (!confirm(`Importar ${payload.inscricoes.length} inscrições? Cadastros existentes serão ignorados.`)) return;
+            const quantidadeFeedbacks = Array.isArray(payload.feedbacks) ? payload.feedbacks.length : 0;
+            if (!confirm(`Importar ${payload.inscricoes.length} inscrições e ${quantidadeFeedbacks} feedbacks? Registros existentes serão ignorados.`)) return;
             const data = await request(api.importar, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(payload),
             });
-            alert(`Importadas: ${data.importados}\nIgnoradas: ${data.ignorados}`);
+            alert(`Inscrições importadas: ${data.importados}\nInscrições ignoradas: ${data.ignorados}\nFeedbacks importados: ${data.feedbacks_importados}\nFeedbacks ignorados: ${data.feedbacks_ignorados}`);
             await carregarInscricoes();
         } catch (error) {
             alert(error.message || 'Não foi possível importar o backup.');

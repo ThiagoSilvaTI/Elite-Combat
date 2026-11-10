@@ -470,7 +470,8 @@
             return;
         }
 
-        if (!confirm(`Importar ${payload.inscricoes.length} inscrições? Inscrições com número já existente serão ignoradas.`)) {
+        const quantidadeFeedbacks = Array.isArray(payload.feedbacks) ? payload.feedbacks.length : 0;
+        if (!confirm(`Importar ${payload.inscricoes.length} inscrições e ${quantidadeFeedbacks} feedbacks? Registros já existentes serão ignorados.`)) {
             return;
         }
 
@@ -482,7 +483,7 @@
             });
             const data = await r.json();
             if (data.ok) {
-                alert(`Importados: ${data.importados}\nIgnorados: ${data.ignorados}`);
+                alert(`Inscrições importadas: ${data.importados}\nInscrições ignoradas: ${data.ignorados}\nFeedbacks importados: ${data.feedbacks_importados}\nFeedbacks ignorados: ${data.feedbacks_ignorados}`);
                 carregar();
             } else {
                 alert('Erro: ' + (data.erro || 'desconhecido'));

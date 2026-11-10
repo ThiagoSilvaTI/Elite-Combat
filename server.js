@@ -2,6 +2,7 @@ const express = require('express');
 const path = require('path');
 const fs = require('fs');
 const crypto = require('crypto');
+const { createClient } = require('@libsql/client');
 const Database = require('better-sqlite3');
 
 const app = express();
@@ -10,127 +11,215 @@ const PORT = process.env.PORT || 3000;
 // ================== BANCO DE DADOS ==================
 const DB_DIR = path.join(__dirname, 'database');
 const CONTRATOS_DIR = path.join(DB_DIR, 'contratos');
-if (!fs.existsSync(DB_DIR)) fs.mkdirSync(DB_DIR, { recursive: true });
-if (!fs.existsSync(CONTRATOS_DIR)) fs.mkdirSync(CONTRATOS_DIR, { recursive: true });
-
-const db = new Database(path.join(DB_DIR, 'elite_combat.db'));
-db.pragma('journal_mode = WAL');
-
-db.exec(`
-  CREATE TABLE IF NOT EXISTS inscricoes (
-    id            INTEGER PRIMARY KEY AUTOINCREMENT,
-    numero_cadastro TEXT UNIQUE NOT NULL,
-    data_preenchimento TEXT NOT NULL,
-    responsavel_atendimento TEXT NOT NULL,
-    nome          TEXT NOT NULL,
-    data_nascimento TEXT NOT NULL,
-    idade         INTEGER NOT NULL,
-    telefone      TEXT NOT NULL,
-    turma         TEXT NOT NULL,
-    turma_aula    TEXT,
-    periodo       TEXT,
-    horario       TEXT,
-    ja_muaythai   TEXT,
-    ja_outra_arte TEXT,
-    modalidade    TEXT,
-    tempo_pratica TEXT,
-    objetivo      TEXT,
-    tipo_inscricao TEXT NOT NULL DEFAULT 'aluno',
-    autorizacao_instrutor INTEGER NOT NULL DEFAULT 0,
-    resp_nome     TEXT,
-    resp_parentesco TEXT,
-    resp_telefone TEXT,
-    emerg_nome    TEXT NOT NULL,
-    emerg_parentesco TEXT,
-    emerg_telefone TEXT NOT NULL,
-    saude_json    TEXT,
-    adaptacoes    TEXT,
-    autorizou_dados TEXT,
-    contrato_path TEXT,
-    criado_em     TEXT DEFAULT (datetime('now'))
-  );
-`);
-
-const colunasInscricao = new Set(
-  db.prepare('PRAGMA table_info(inscricoes)').all().map((coluna) => coluna.name)
+const usaTurso = process.env.DATABASE_PROVIDER === 'turso';
+const estaNoRender = Boolean(
+  process.env.RENDER || process.env.RENDER_SERVICE_ID || process.env.RENDER_EXTERNAL_URL
 );
-if (!colunasInscricao.has('tipo_inscricao')) {
-  db.exec("ALTER TABLE inscricoes ADD COLUMN tipo_inscricao TEXT NOT NULL DEFAULT 'aluno'");
+if (estaNoRender && !usaTurso) {
+  throw new Error('Configure DATABASE_PROVIDER=turso e as credenciais do Turso no Render.');
 }
-if (!colunasInscricao.has('autorizacao_instrutor')) {
-  db.exec('ALTER TABLE inscricoes ADD COLUMN autorizacao_instrutor INTEGER NOT NULL DEFAULT 0');
-}
-if (!colunasInscricao.has('turma_aula')) {
-  db.exec('ALTER TABLE inscricoes ADD COLUMN turma_aula TEXT');
+if (usaTurso && (!process.env.TURSO_DATABASE_URL || !process.env.TURSO_AUTH_TOKEN)) {
+  throw new Error('DATABASE_PROVIDER=turso exige TURSO_DATABASE_URL e TURSO_AUTH_TOKEN.');
 }
 
-db.exec(`
-  CREATE TABLE IF NOT EXISTS feedbacks (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    numero_cadastro TEXT,
-    email TEXT,
-    nota INTEGER NOT NULL CHECK (nota BETWEEN 1 AND 5),
-    recomendacao TEXT NOT NULL,
-    criado_em TEXT NOT NULL DEFAULT (datetime('now')),
-    atualizado_em TEXT NOT NULL DEFAULT (datetime('now'))
-  );
-`);
+let db;
+if (usaTurso) {
+  db = createClient({
+    url: process.env.TURSO_DATABASE_URL,
+    authToken: process.env.TURSO_AUTH_TOKEN,
+  });
+} else {
+  if (!fs.existsSync(DB_DIR)) fs.mkdirSync(DB_DIR, { recursive: true });
+  if (!fs.existsSync(CONTRATOS_DIR)) fs.mkdirSync(CONTRATOS_DIR, { recursive: true });
+  db = new Database(path.join(DB_DIR, 'elite_combat.db'));
+  db.pragma('journal_mode = WAL');
+}
 
-const colunasFeedback = db.prepare('PRAGMA table_info(feedbacks)').all();
-const usaCadastroComoChave = colunasFeedback.some(
-  (coluna) => coluna.name === 'numero_cadastro' && coluna.pk > 0
-);
-if (usaCadastroComoChave) {
-  const possuiEmail = colunasFeedback.some((coluna) => coluna.name === 'email');
-  const feedbacksAntigos = db.prepare(`
-    SELECT numero_cadastro, nota, recomendacao,
-           ${possuiEmail ? 'email' : 'NULL AS email'},
-           criado_em, atualizado_em
-    FROM feedbacks
-    ORDER BY atualizado_em DESC, criado_em DESC
-  `).all();
-  const migrarFeedbacks = db.transaction((linhas) => {
-    db.exec('ALTER TABLE feedbacks RENAME TO feedbacks_por_cadastro');
-    db.exec(`
-      CREATE TABLE feedbacks (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        numero_cadastro TEXT,
-        email TEXT,
-        nota INTEGER NOT NULL CHECK (nota BETWEEN 1 AND 5),
-        recomendacao TEXT NOT NULL,
-        criado_em TEXT NOT NULL DEFAULT (datetime('now')),
-        atualizado_em TEXT NOT NULL DEFAULT (datetime('now'))
+function converterLinha(row, columns) {
+  return Object.fromEntries(columns.map((column, index) => {
+    const value = row[index];
+    return [column, typeof value === 'bigint' ? Number(value) : value];
+  }));
+}
+
+async function consultarTudo(sql, args = [], connection = db) {
+  if (!usaTurso) {
+    const statement = connection.prepare(sql);
+    return Array.isArray(args) ? statement.all(...args) : statement.all(args);
+  }
+  const result = await connection.execute({ sql, args });
+  return result.rows.map((row) => converterLinha(row, result.columns));
+}
+
+async function consultarUm(sql, args = [], connection = db) {
+  if (!usaTurso) {
+    const statement = connection.prepare(sql);
+    return Array.isArray(args) ? statement.get(...args) : statement.get(args);
+  }
+  const result = await connection.execute({ sql, args });
+  return result.rows.length ? converterLinha(result.rows[0], result.columns) : undefined;
+}
+
+async function executar(sql, args = [], connection = db) {
+  if (!usaTurso) {
+    const statement = connection.prepare(sql);
+    return Array.isArray(args) ? statement.run(...args) : statement.run(args);
+  }
+  const result = await connection.execute({ sql, args });
+  return {
+    changes: result.rowsAffected,
+    lastInsertRowid: result.lastInsertRowid === undefined
+      ? undefined
+      : Number(result.lastInsertRowid),
+  };
+}
+
+async function executarDDL(sql) {
+  if (usaTurso) {
+    await db.execute(sql);
+  } else {
+    db.exec(sql);
+  }
+}
+
+async function executarLote(statements) {
+  if (usaTurso) {
+    return db.batch(statements, 'write');
+  }
+  const transaction = db.transaction(() => {
+    const results = [];
+    for (const statement of statements) {
+      const prepared = db.prepare(statement.sql);
+      results.push(
+        Array.isArray(statement.args)
+          ? prepared.run(...statement.args)
+          : prepared.run(statement.args || {})
       );
+    }
+    return results;
+  });
+  return transaction();
+}
+
+async function inicializarBanco() {
+  await executarDDL(`
+    CREATE TABLE IF NOT EXISTS inscricoes (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      numero_cadastro TEXT UNIQUE NOT NULL,
+      data_preenchimento TEXT NOT NULL,
+      responsavel_atendimento TEXT NOT NULL,
+      nome TEXT NOT NULL,
+      data_nascimento TEXT NOT NULL,
+      idade INTEGER NOT NULL,
+      telefone TEXT NOT NULL,
+      turma TEXT NOT NULL,
+      turma_aula TEXT,
+      periodo TEXT,
+      horario TEXT,
+      ja_muaythai TEXT,
+      ja_outra_arte TEXT,
+      modalidade TEXT,
+      tempo_pratica TEXT,
+      objetivo TEXT,
+      tipo_inscricao TEXT NOT NULL DEFAULT 'aluno',
+      autorizacao_instrutor INTEGER NOT NULL DEFAULT 0,
+      resp_nome TEXT,
+      resp_parentesco TEXT,
+      resp_telefone TEXT,
+      emerg_nome TEXT NOT NULL,
+      emerg_parentesco TEXT,
+      emerg_telefone TEXT NOT NULL,
+      saude_json TEXT,
+      adaptacoes TEXT,
+      autorizou_dados TEXT,
+      contrato_path TEXT,
+      contrato_conteudo TEXT,
+      criado_em TEXT DEFAULT (datetime('now'))
+    );
+  `);
+
+  const colunasInscricao = new Set(
+    (await consultarTudo('PRAGMA table_info(inscricoes)')).map((coluna) => coluna.name)
+  );
+  const migracoesInscricao = [
+    ['tipo_inscricao', "ALTER TABLE inscricoes ADD COLUMN tipo_inscricao TEXT NOT NULL DEFAULT 'aluno'"],
+    ['autorizacao_instrutor', 'ALTER TABLE inscricoes ADD COLUMN autorizacao_instrutor INTEGER NOT NULL DEFAULT 0'],
+    ['turma_aula', 'ALTER TABLE inscricoes ADD COLUMN turma_aula TEXT'],
+    ['contrato_conteudo', 'ALTER TABLE inscricoes ADD COLUMN contrato_conteudo TEXT'],
+  ];
+  for (const [coluna, sql] of migracoesInscricao) {
+    if (!colunasInscricao.has(coluna)) await executarDDL(sql);
+  }
+
+  await executarDDL(`
+    CREATE TABLE IF NOT EXISTS feedbacks (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      numero_cadastro TEXT,
+      email TEXT,
+      nota INTEGER NOT NULL CHECK (nota BETWEEN 1 AND 5),
+      recomendacao TEXT NOT NULL,
+      criado_em TEXT NOT NULL DEFAULT (datetime('now')),
+      atualizado_em TEXT NOT NULL DEFAULT (datetime('now'))
+    );
+  `);
+
+  const colunasFeedback = await consultarTudo('PRAGMA table_info(feedbacks)');
+  const usaCadastroComoChave = colunasFeedback.some(
+    (coluna) => coluna.name === 'numero_cadastro' && coluna.pk > 0
+  );
+  if (usaCadastroComoChave) {
+    const possuiEmail = colunasFeedback.some((coluna) => coluna.name === 'email');
+    const feedbacksAntigos = await consultarTudo(`
+      SELECT numero_cadastro, nota, recomendacao,
+             ${possuiEmail ? 'email' : 'NULL AS email'},
+             criado_em, atualizado_em
+      FROM feedbacks
+      ORDER BY atualizado_em DESC, criado_em DESC
     `);
-    const inserir = db.prepare(`
-      INSERT INTO feedbacks (numero_cadastro, email, nota, recomendacao, criado_em, atualizado_em)
-      VALUES (?, ?, ?, ?, ?, ?)
-    `);
+    const statements = [
+      { sql: 'ALTER TABLE feedbacks RENAME TO feedbacks_por_cadastro' },
+      {
+        sql: `CREATE TABLE feedbacks (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          numero_cadastro TEXT,
+          email TEXT,
+          nota INTEGER NOT NULL CHECK (nota BETWEEN 1 AND 5),
+          recomendacao TEXT NOT NULL,
+          criado_em TEXT NOT NULL DEFAULT (datetime('now')),
+          atualizado_em TEXT NOT NULL DEFAULT (datetime('now'))
+        )`,
+      },
+    ];
     const emailsVistos = new Set();
-    for (const linha of linhas) {
+    for (const linha of feedbacksAntigos) {
       const email = String(linha.email || '').trim() || null;
       const chaveEmail = email ? email.toLocaleLowerCase('en-US') : null;
       if (chaveEmail && emailsVistos.has(chaveEmail)) continue;
       if (chaveEmail) emailsVistos.add(chaveEmail);
-      inserir.run(
-        linha.numero_cadastro,
-        email,
-        linha.nota,
-        linha.recomendacao,
-        linha.criado_em,
-        linha.atualizado_em
-      );
+      statements.push({
+        sql: `INSERT INTO feedbacks
+          (numero_cadastro, email, nota, recomendacao, criado_em, atualizado_em)
+          VALUES (?, ?, ?, ?, ?, ?)`,
+        args: [
+          linha.numero_cadastro,
+          email,
+          linha.nota,
+          linha.recomendacao,
+          linha.criado_em,
+          linha.atualizado_em,
+        ],
+      });
     }
-    db.exec('DROP TABLE feedbacks_por_cadastro');
-  });
-  migrarFeedbacks(feedbacksAntigos);
-}
+    statements.push({ sql: 'DROP TABLE feedbacks_por_cadastro' });
+    await executarLote(statements);
+  }
 
-db.exec(`
-  CREATE UNIQUE INDEX IF NOT EXISTS idx_feedbacks_email
-  ON feedbacks(email COLLATE NOCASE)
-  WHERE email IS NOT NULL;
-`);
+  await executarDDL(`
+    CREATE UNIQUE INDEX IF NOT EXISTS idx_feedbacks_email
+    ON feedbacks(email COLLATE NOCASE)
+    WHERE email IS NOT NULL;
+  `);
+}
 
 function normalizarTelefone(valor) {
   const digits = String(valor || '').replace(/\D/g, '');
@@ -225,15 +314,15 @@ app.get('/api/preferencia', (req, res) => {
   res.redirect(destino);
 });
 
-app.get('/api/feedback', (req, res) => {
+app.get('/api/feedback', async (req, res) => {
   try {
-    const feedbacks = db.prepare(`
+    const feedbacks = await consultarTudo(`
       SELECT email, nota, recomendacao, atualizado_em
       FROM feedbacks
       WHERE email IS NOT NULL
       ORDER BY atualizado_em DESC
       LIMIT 50
-    `).all();
+    `);
     return res.json({ ok: true, feedbacks });
   } catch (err) {
     console.error('Erro ao listar feedbacks:', err);
@@ -241,7 +330,7 @@ app.get('/api/feedback', (req, res) => {
   }
 });
 
-app.post('/api/feedback', (req, res) => {
+app.post('/api/feedback', async (req, res) => {
   try {
     const email = String(req.body?.email || '').trim();
     const recomendacao = String(req.body?.recomendacao || '').trim();
@@ -267,20 +356,21 @@ app.post('/api/feedback', (req, res) => {
       });
     }
 
-    const emailExistente = db.prepare(
-      'SELECT id FROM feedbacks WHERE email = ? COLLATE NOCASE'
-    ).get(email);
+    const emailExistente = await consultarUm(
+      'SELECT id FROM feedbacks WHERE email = ? COLLATE NOCASE',
+      [email]
+    );
     if (emailExistente) {
-      db.prepare(`
+      await executar(`
         UPDATE feedbacks
         SET email = ?, nota = ?, recomendacao = ?, atualizado_em = datetime('now')
         WHERE id = ?
-      `).run(email, nota, recomendacao, emailExistente.id);
+      `, [email, nota, recomendacao, emailExistente.id]);
     } else {
-      db.prepare(`
+      await executar(`
         INSERT INTO feedbacks (email, nota, recomendacao)
         VALUES (?, ?, ?)
-      `).run(email, nota, recomendacao);
+      `, [email, nota, recomendacao]);
     }
 
     return res.json({
@@ -295,21 +385,21 @@ app.post('/api/feedback', (req, res) => {
 });
 
 // ---- Rota: gerar número de cadastro único de 11 dígitos ----
-function gerarNumeroCadastro() {
+async function gerarNumeroCadastro() {
   let n;
   let tentativas = 0;
   do {
     n = String(crypto.randomInt(10000000000, 99999999999));
     tentativas++;
   } while (
-    db.prepare('SELECT 1 FROM inscricoes WHERE numero_cadastro = ?').get(n) &&
+    await consultarUm('SELECT 1 FROM inscricoes WHERE numero_cadastro = ?', [n]) &&
     tentativas < 20
   );
   return n;
 }
 
 // ---- Rota: receber inscrição ----
-app.post('/api/inscricao', (req, res) => {
+app.post('/api/inscricao', async (req, res) => {
   try {
     const b = req.body || {};
 
@@ -396,13 +486,13 @@ app.post('/api/inscricao', (req, res) => {
         .json({ ok: false, erro: 'É necessário autorizar o uso das informações de saúde.' });
     }
 
-    const numero_cadastro = gerarNumeroCadastro();
+    const numero_cadastro = await gerarNumeroCadastro();
     const data_preenchimento = new Date().toLocaleString('pt-BR', {
       timeZone: 'America/Sao_Paulo',
     });
     const responsavel_atendimento = 'BDST';
 
-    const stmt = db.prepare(`
+    const insertSql = `
       INSERT INTO inscricoes (
         numero_cadastro, data_preenchimento, responsavel_atendimento,
         nome, data_nascimento, idade, telefone,
@@ -420,10 +510,10 @@ app.post('/api/inscricao', (req, res) => {
         @emerg_nome, @emerg_parentesco, @emerg_telefone,
         @saude_json, @adaptacoes, @autorizou_dados
       )
-    `);
+    `;
 
     const saude = b.saude || {};
-    const info = stmt.run({
+    const dadosInscricao = {
       numero_cadastro,
       data_preenchimento,
       responsavel_atendimento,
@@ -451,11 +541,14 @@ app.post('/api/inscricao', (req, res) => {
       saude_json: JSON.stringify(saude),
       adaptacoes: b.adaptacoes || null,
       autorizou_dados: b.autorizou_dados,
-    });
+    };
 
+    const info = await executar(insertSql, dadosInscricao);
     const idInscricao = info.lastInsertRowid;
 
-    const contratoPath = path.join(CONTRATOS_DIR, `contrato_${numero_cadastro}.txt`);
+    const contratoPath = usaTurso
+      ? null
+      : path.join(CONTRATOS_DIR, `contrato_${numero_cadastro}.txt`);
     const contratoConteudo = gerarContrato({
       numero_cadastro,
       data_preenchimento,
@@ -477,11 +570,11 @@ app.post('/api/inscricao', (req, res) => {
       adaptacoes: b.adaptacoes || 'Nenhuma informada',
       saude,
     });
-    fs.writeFileSync(contratoPath, contratoConteudo, 'utf-8');
+    if (contratoPath) fs.writeFileSync(contratoPath, contratoConteudo, 'utf-8');
 
-    db.prepare('UPDATE inscricoes SET contrato_path = ? WHERE id = ?').run(
-      contratoPath,
-      idInscricao
+    await executar(
+      'UPDATE inscricoes SET contrato_path = ?, contrato_conteudo = ? WHERE id = ?',
+      [contratoPath, contratoConteudo, idInscricao]
     );
 
     return res.json({
@@ -497,19 +590,51 @@ app.post('/api/inscricao', (req, res) => {
 });
 
 // ---- Rota: baixar contrato ----
-app.get('/api/contrato/:numero', (req, res) => {
+app.get('/api/contrato/:numero', async (req, res) => {
   const { numero } = req.params;
-  const row = db
-    .prepare('SELECT contrato_path FROM inscricoes WHERE numero_cadastro = ?')
-    .get(numero);
-  if (!row || !row.contrato_path || !fs.existsSync(row.contrato_path)) {
-    return res.status(404).send('Contrato não encontrado.');
+  try {
+    const row = await consultarUm(
+      'SELECT * FROM inscricoes WHERE numero_cadastro = ?',
+      [numero]
+    );
+    if (!row) return res.status(404).send('Contrato não encontrado.');
+
+    let conteudo = row.contrato_conteudo;
+    if (!conteudo && row.contrato_path && fs.existsSync(row.contrato_path)) {
+      conteudo = fs.readFileSync(row.contrato_path, 'utf-8');
+    }
+    if (!conteudo) {
+      let saude = {};
+      try {
+        saude = row.saude_json ? JSON.parse(row.saude_json) : {};
+      } catch (err) {
+        console.error('Erro ao ler dados de saúde do contrato:', err);
+        return res.status(500).send('Não foi possível gerar o contrato.');
+      }
+      conteudo = gerarContrato({
+        ...row,
+        saude,
+        adaptacoes: row.adaptacoes || 'Nenhuma informada',
+        emerg_nome: row.emerg_nome || 'Não informado',
+        emerg_telefone: row.emerg_telefone || 'Não informado',
+      });
+      await executar(
+        'UPDATE inscricoes SET contrato_conteudo = ? WHERE numero_cadastro = ?',
+        [conteudo, numero]
+      );
+    }
+    res.setHeader('Content-Type', 'text/plain; charset=utf-8');
+    res.setHeader('Content-Disposition', `attachment; filename="contrato_${numero}.txt"`);
+    res.setHeader('Cache-Control', 'no-store');
+    return res.send(conteudo);
+  } catch (err) {
+    console.error('Erro ao consultar contrato:', err);
+    return res.status(500).send('Não foi possível consultar o contrato.');
   }
-  res.download(row.contrato_path, `contrato_${numero}.txt`);
 });
 
 // ---- Rota: consultar inscrição pelo app autenticado ----
-app.get('/api/integracao/inscricao', (req, res) => {
+app.get('/api/integracao/inscricao', async (req, res) => {
   const expectedToken = process.env.REGISTRATION_API_TOKEN || '';
   const providedToken = String(req.get('authorization') || '').replace(/^Bearer\s+/i, '');
   const expectedBuffer = Buffer.from(expectedToken);
@@ -531,9 +656,13 @@ app.get('/api/integracao/inscricao', (req, res) => {
     return res.status(400).json({ ok: false, erro: 'Número de cadastro ou telefone inválido.' });
   }
 
-  const row = db
-    .prepare('SELECT * FROM inscricoes WHERE numero_cadastro = ?')
-    .get(numero);
+  let row;
+  try {
+    row = await consultarUm('SELECT * FROM inscricoes WHERE numero_cadastro = ?', [numero]);
+  } catch (err) {
+    console.error('Erro ao consultar inscrição da integração:', err);
+    return res.status(500).json({ ok: false, erro: 'Não foi possível consultar a inscrição.' });
+  }
 
   if (!row || (telefone && normalizarTelefone(row.telefone) !== normalizarTelefone(telefone))) {
     return res.status(404).json({ ok: false, erro: 'Inscrição não encontrada.' });
@@ -577,7 +706,7 @@ app.get('/api/integracao/inscricao', (req, res) => {
       saude,
       adaptacoes: row.adaptacoes,
       autorizou_dados: row.autorizou_dados,
-      contrato_disponivel: !!(row.contrato_path && fs.existsSync(row.contrato_path)),
+      contrato_disponivel: true,
     },
   });
 });
@@ -695,13 +824,13 @@ app.get('/admin/mobile', exigirAdmin, (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'admin-mobile.html'));
 });
 
-app.get('/api/admin/feedback', exigirAdmin, (req, res) => {
+app.get('/api/admin/feedback', exigirAdmin, async (req, res) => {
   try {
-    const feedbacks = db.prepare(`
+    const feedbacks = await consultarTudo(`
       SELECT id, email, nota, recomendacao, atualizado_em
       FROM feedbacks
       ORDER BY atualizado_em DESC
-    `).all();
+    `);
     return res.json({ ok: true, feedbacks });
   } catch (err) {
     console.error('Erro admin feedbacks:', err);
@@ -709,13 +838,13 @@ app.get('/api/admin/feedback', exigirAdmin, (req, res) => {
   }
 });
 
-app.delete('/api/admin/feedback/:id', exigirAdmin, (req, res) => {
+app.delete('/api/admin/feedback/:id', exigirAdmin, async (req, res) => {
   try {
     const id = Number(req.params.id);
     if (!Number.isSafeInteger(id) || id < 1) {
       return res.status(400).json({ ok: false, erro: 'Identificador de feedback inválido.' });
     }
-    const resultado = db.prepare('DELETE FROM feedbacks WHERE id = ?').run(id);
+    const resultado = await executar('DELETE FROM feedbacks WHERE id = ?', [id]);
     if (!resultado.changes) {
       return res.status(404).json({ ok: false, erro: 'Feedback não encontrado.' });
     }
@@ -727,26 +856,24 @@ app.delete('/api/admin/feedback/:id', exigirAdmin, (req, res) => {
 });
 
 // API: listar todas as inscrições
-app.get('/api/admin/inscricoes', exigirAdmin, (req, res) => {
+app.get('/api/admin/inscricoes', exigirAdmin, async (req, res) => {
   try {
-    const rows = db
-      .prepare(
-        `SELECT id, numero_cadastro, data_preenchimento, nome, idade, telefone,
+    const rows = await consultarTudo(
+      `SELECT id, numero_cadastro, data_preenchimento, nome, idade, telefone,
                 turma, tipo_inscricao, autorizacao_instrutor, turma_aula, periodo, horario, objetivo,
                 resp_nome, resp_telefone,
                 emerg_nome, emerg_telefone,
                 saude_json, adaptacoes,
-                contrato_path, criado_em
+                contrato_path, contrato_conteudo, criado_em
          FROM inscricoes
          ORDER BY id DESC`
-      )
-      .all();
+    );
 
     // Parse do JSON de saúde
     const inscricoes = rows.map((r) => ({
       ...r,
       saude: r.saude_json ? JSON.parse(r.saude_json) : {},
-      tem_contrato: !!(r.contrato_path && fs.existsSync(r.contrato_path)),
+      tem_contrato: true,
     }));
 
     return res.json({ ok: true, total: inscricoes.length, inscricoes });
@@ -757,13 +884,17 @@ app.get('/api/admin/inscricoes', exigirAdmin, (req, res) => {
 });
 
 // API: exportar tudo em JSON (backup)
-app.get('/api/admin/exportar', exigirAdmin, (req, res) => {
+app.get('/api/admin/exportar', exigirAdmin, async (req, res) => {
   try {
-    const rows = db.prepare('SELECT * FROM inscricoes ORDER BY id ASC').all();
+    const [rows, feedbacks] = await Promise.all([
+      consultarTudo('SELECT * FROM inscricoes ORDER BY id ASC'),
+      consultarTudo('SELECT * FROM feedbacks ORDER BY id ASC'),
+    ]);
     const payload = {
       exportado_em: new Date().toISOString(),
       total: rows.length,
       inscricoes: rows,
+      feedbacks,
     };
     res.setHeader(
       'Content-Disposition',
@@ -778,14 +909,17 @@ app.get('/api/admin/exportar', exigirAdmin, (req, res) => {
 });
 
 // API: importar backup JSON
-app.post('/api/admin/importar', exigirAdmin, express.json({ limit: '10mb' }), (req, res) => {
+app.post('/api/admin/importar', exigirAdmin, express.json({ limit: '10mb' }), async (req, res) => {
   try {
-    const { inscricoes } = req.body || {};
+    const { inscricoes, feedbacks = [] } = req.body || {};
     if (!Array.isArray(inscricoes)) {
       return res.status(400).json({ ok: false, erro: 'JSON inválido.' });
     }
+    if (!Array.isArray(feedbacks)) {
+      return res.status(400).json({ ok: false, erro: 'Lista de feedbacks inválida.' });
+    }
 
-    const stmt = db.prepare(`
+    const insertSql = `
       INSERT OR IGNORE INTO inscricoes (
         numero_cadastro, data_preenchimento, responsavel_atendimento,
         nome, data_nascimento, idade, telefone,
@@ -794,7 +928,7 @@ app.post('/api/admin/importar', exigirAdmin, express.json({ limit: '10mb' }), (r
         resp_nome, resp_parentesco, resp_telefone,
         emerg_nome, emerg_parentesco, emerg_telefone,
         saude_json, adaptacoes, autorizou_dados,
-        contrato_path, criado_em
+        contrato_path, contrato_conteudo, criado_em
       ) VALUES (
         @numero_cadastro, @data_preenchimento, @responsavel_atendimento,
         @nome, @data_nascimento, @idade, @telefone,
@@ -803,16 +937,16 @@ app.post('/api/admin/importar', exigirAdmin, express.json({ limit: '10mb' }), (r
         @resp_nome, @resp_parentesco, @resp_telefone,
         @emerg_nome, @emerg_parentesco, @emerg_telefone,
         @saude_json, @adaptacoes, @autorizou_dados,
-        @contrato_path, @criado_em
+        @contrato_path, @contrato_conteudo, @criado_em
       )
-    `);
+    `;
 
-    let importados = 0;
-    const tx = db.transaction((lista) => {
-      for (const r of lista) {
-        // Só importa se número de cadastro existir
-        if (!r.numero_cadastro) continue;
-        const info = stmt.run({
+    const statements = [];
+    for (const r of inscricoes) {
+      if (!r.numero_cadastro) continue;
+      statements.push({
+        sql: insertSql,
+        args: {
           numero_cadastro: r.numero_cadastro,
           data_preenchimento: r.data_preenchimento || new Date().toLocaleString('pt-BR'),
           responsavel_atendimento: r.responsavel_atendimento || 'BDST',
@@ -840,15 +974,45 @@ app.post('/api/admin/importar', exigirAdmin, express.json({ limit: '10mb' }), (r
           saude_json: r.saude_json || '{}',
           adaptacoes: r.adaptacoes || null,
           autorizou_dados: r.autorizou_dados || 'sim',
-          contrato_path: null, // será regenerado no próximo download
+          contrato_path: usaTurso ? null : r.contrato_path || null,
+          contrato_conteudo: r.contrato_conteudo || null,
           criado_em: r.criado_em || new Date().toISOString(),
-        });
-        if (info.changes > 0) importados++;
-      }
-    });
+        },
+      });
+    }
 
-    tx(inscricoes);
-    return res.json({ ok: true, importados, ignorados: inscricoes.length - importados });
+    for (const feedback of feedbacks) {
+      if (!feedback.email || !Number.isInteger(Number(feedback.nota))) continue;
+      statements.push({
+        sql: `
+          INSERT OR IGNORE INTO feedbacks (email, nota, recomendacao, atualizado_em)
+          VALUES (?, ?, ?, ?)
+        `,
+        args: [
+          String(feedback.email).trim().toLowerCase(),
+          Number(feedback.nota),
+          String(feedback.recomendacao || ''),
+          feedback.atualizado_em || new Date().toISOString(),
+        ],
+      });
+    }
+    const quantidadeInscricoes = inscricoes.filter((r) => r.numero_cadastro).length;
+    const resultados = statements.length ? await executarLote(statements) : [];
+    const totalAlteracoes = (lista) => lista.reduce((total, resultado) => {
+      const alteracoes = resultado.changes === undefined
+        ? resultado.rowsAffected
+        : resultado.changes;
+      return total + (alteracoes > 0 ? 1 : 0);
+    }, 0);
+    const importados = totalAlteracoes(resultados.slice(0, quantidadeInscricoes));
+    const feedbacksImportados = totalAlteracoes(resultados.slice(quantidadeInscricoes));
+    return res.json({
+      ok: true,
+      importados,
+      ignorados: inscricoes.length - importados,
+      feedbacks_importados: feedbacksImportados,
+      feedbacks_ignorados: feedbacks.length - feedbacksImportados,
+    });
   } catch (err) {
     console.error('Erro admin import:', err);
     return res.status(500).json({ ok: false, erro: 'Erro ao importar.' });
@@ -856,21 +1020,22 @@ app.post('/api/admin/importar', exigirAdmin, express.json({ limit: '10mb' }), (r
 });
 
 // API: remover inscrição
-app.delete('/api/admin/inscricao/:numero', exigirAdmin, (req, res) => {
+app.delete('/api/admin/inscricao/:numero', exigirAdmin, async (req, res) => {
   try {
     const { numero } = req.params;
-    const row = db
-      .prepare('SELECT contrato_path FROM inscricoes WHERE numero_cadastro = ?')
-      .get(numero);
+    const row = await consultarUm(
+      'SELECT contrato_path FROM inscricoes WHERE numero_cadastro = ?',
+      [numero]
+    );
 
     if (!row) return res.status(404).json({ ok: false, erro: 'Não encontrado.' });
 
     // Remove arquivo de contrato
     if (row.contrato_path && fs.existsSync(row.contrato_path)) {
-      try { fs.unlinkSync(row.contrato_path); } catch (e) {}
+      fs.unlinkSync(row.contrato_path);
     }
 
-    db.prepare('DELETE FROM inscricoes WHERE numero_cadastro = ?').run(numero);
+    await executar('DELETE FROM inscricoes WHERE numero_cadastro = ?', [numero]);
     return res.json({ ok: true });
   } catch (err) {
     console.error('Erro admin delete:', err);
@@ -878,6 +1043,13 @@ app.delete('/api/admin/inscricao/:numero', exigirAdmin, (req, res) => {
   }
 });
 
-app.listen(PORT, () => {
-  console.log(`Servidor Elite Combat rodando em http://localhost:${PORT}`);
+inicializarBanco()
+  .then(() => {
+    app.listen(PORT, () => {
+      console.log(`Servidor Elite Combat rodando em http://localhost:${PORT}`);
+    });
+  })
+  .catch((err) => {
+    console.error('Erro ao inicializar o banco de dados:', err);
+    process.exit(1);
 });
