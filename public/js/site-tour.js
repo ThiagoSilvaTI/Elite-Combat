@@ -25,6 +25,13 @@
             target: '.section-header',
             title: 'Fale com a equipe',
             text: 'Consulte a localização e os canais de contato da academia.'
+        },
+        {
+            page: 'contato.html',
+            target: '#feedback',
+            title: 'Deixe seu feedback',
+            text: 'No final do tour, você também pode avaliar o site e deixar uma recomendação nesta área. É opcional: o tour não preenche nem envia o formulário por você.',
+            scrollIntoView: true
         }
     ];
 
@@ -129,6 +136,17 @@
             step.text,
             step.target
         );
+        if (step.scrollIntoView) {
+            const target = document.querySelector(step.target);
+            if (target) {
+                target.scrollIntoView({
+                    behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches
+                        ? 'auto'
+                        : 'smooth',
+                    block: 'start'
+                });
+            }
+        }
         backButton.hidden = index === 0;
         nextButton.textContent = index === siteSteps.length - 1 ? 'Concluir' : 'Próximo';
         saveState({ active: true, step: index });
