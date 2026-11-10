@@ -183,14 +183,14 @@
                 </div>
                 <div class="full">
                     <label>Objetivo principal</label>
-                    <select name="objetivo">
-                        <option value="">—</option>
-                        <option>Saúde / condicionamento</option>
-                        <option>Defesa pessoal</option>
-                        <option>Competição</option>
-                        <option>Disciplina</option>
-                        <option>Lazer / socialização</option>
-                    </select>
+                    <div class="objetivo-options">
+                        <label class="objetivo-option"><input type="checkbox" name="objetivo" value="Saúde / condicionamento"><span>Saúde / condicionamento</span></label>
+                        <label class="objetivo-option"><input type="checkbox" name="objetivo" value="Defesa pessoal"><span>Defesa pessoal</span></label>
+                        <label class="objetivo-option"><input type="checkbox" name="objetivo" value="Competição"><span>Competição</span></label>
+                        <label class="objetivo-option"><input type="checkbox" name="objetivo" value="Disciplina"><span>Disciplina</span></label>
+                        <label class="objetivo-option"><input type="checkbox" name="objetivo" value="Lazer / socialização"><span>Lazer / socialização</span></label>
+                        <label class="objetivo-option"><input type="checkbox" name="objetivo" value="Tornar instrutor"><span>Tornar instrutor</span></label>
+                    </div>
                 </div>
             </div>
         </div>
@@ -608,7 +608,9 @@ form.addEventListener('submit', async (e) => {
         ja_outra_arte: tipoInscricao.value === 'instrutor' ? null : form.elements.ja_outra_arte.value,
         modalidade: tipoInscricao.value === 'instrutor' ? null : form.elements.modalidade.value,
         tempo_pratica: tipoInscricao.value === 'instrutor' ? null : form.elements.tempo_pratica.value,
-        objetivo: form.objetivo.value,
+        objetivo: [...form.querySelectorAll('input[name="objetivo"]:checked')]
+            .map(opcao => opcao.value)
+            .join(' · '),
         resp_nome: form.resp_nome.value,
         resp_parentesco: form.resp_parentesco.value,
         resp_telefone: form.resp_telefone.value,
